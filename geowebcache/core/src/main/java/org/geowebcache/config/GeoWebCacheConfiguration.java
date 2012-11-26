@@ -77,8 +77,10 @@ public class GeoWebCacheConfiguration {
      * The persisted list of layers
      */
     private List<TileLayer> layers;
-    
-    /**
+
+    private Boolean enableFullWMS;
+
+   /**
      * Default constructor
      */
     public GeoWebCacheConfiguration() {
@@ -107,6 +109,11 @@ public class GeoWebCacheConfiguration {
         if (gridSets == null) {
             gridSets = new ArrayList<XMLGridSet>();
         }
+
+        if (enableFullWMS == null) {
+            enableFullWMS = Boolean.FALSE;
+        }
+
         return this;
     }
 
@@ -286,4 +293,19 @@ public class GeoWebCacheConfiguration {
         
         return lockProviderInstance;
     }
+
+    /**
+     * @return enableFullWMS
+     */
+    public Boolean isEnableFullWMS() {
+        return enableFullWMS;
+    }
+
+    /**
+     * @param enableFullWMS
+     */
+    public void setEnableFullWMS(Boolean enableFullWMS) {
+        this.enableFullWMS = enableFullWMS;
+    }
+
 }
