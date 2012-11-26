@@ -115,6 +115,13 @@
             </xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="enableFullWMS" type="xs:boolean" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">
+              Enable fullWMS. Default is false
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
         <xs:element name="gridSets" minOccurs="0">
           <xs:annotation>
             <xs:documentation xml:lang="en">

@@ -187,27 +187,10 @@ public class WMSService extends Service {
         }
         
         if (fullWMS) {
-            // If we support full WMS we need to do a few tests to determine whether
-            // this is a request that requires us to recombine tiles to respond.
-            long[] tileIndex = null;
-            if (tileIndexTarget == null) {
-                try {
-                    tileIndex = gridSubset.closestIndex(bbox);
-                } catch (GridMismatchException gme) {
-                    // Do nothing, the null is info enough
-                }
-            } else {
-                tileIndex = tileIndexTarget;
-            }
-
-            if (tileIndex == null || gridSubset.getTileWidth() != tileWidth
-                    || gridSubset.getTileHeight() != tileHeight
-                    || !bbox.equals(gridSubset.boundsFromIndex(tileIndex), 0.02)) {
-                log.debug("Recombinining tiles to respond to WMS request");
-                ConveyorTile tile = new ConveyorTile(sb, layers, request, response);
-                tile.setHint("getmap");
-                tile.setRequestHandler(ConveyorTile.RequestHandler.SERVICE);
-                return tile;
+            ConveyorTile fullWMSTile = fullWMSTile(tileIndexTarget, gridSubset,
+                    bbox, tileWidth, tileHeight, layers, request, response, sb, false);
+            if (fullWMSTile != null) {
+                return fullWMSTile;
             }
         }
 
@@ -218,6 +201,45 @@ public class WMSService extends Service {
 
         return new ConveyorTile(sb, layers, gridSubset.getName(), tileIndex, mimeType,
                 fullParameters, request, response);
+    }
+
+    public static ConveyorTile fullWMSTile(long[] tileIndexTarget, GridSubset gridSubset,
+            BoundingBox bbox, Integer tileWidth, Integer tileHeight, String layers,
+            HttpServletRequest request, HttpServletResponse response, StorageBroker sb, boolean full
+            ) {
+        ConveyorTile fullWMSTile = null;
+        // If we support full WMS we need to do a few tests to determine whether
+        // this is a request that requires us to recombine tiles to respond.
+        long[] tileIndex = null;
+        if (tileIndexTarget == null) {
+            try {
+                tileIndex = gridSubset.closestIndex(bbox);
+            } catch (GridMismatchException gme) {
+                // Do nothing, the null is info enough
+            }
+        } else {
+            tileIndex = tileIndexTarget;
+        }
+
+        if (tileIndex == null || gridSubset.getTileWidth() != tileWidth
+                || gridSubset.getTileHeight() != tileHeight
+                || !bbox.equals(gridSubset.boundsFromIndex(tileIndex), 0.02)) {
+            log.debug("Recombinining tiles to respond to WMS request");
+            ConveyorTile tile;
+            if (full) {
+                try {
+                    tile = new ConveyorTile(sb, layers, layers, tileIndex, MimeType.createFromExtension("png"), null, request, response);
+                } catch (MimeException ex) {
+                    throw new RuntimeException(ex);
+                }
+            } else {
+                tile = new ConveyorTile(sb, layers, request, response);
+            }
+            tile.setHint("getmap");
+            tile.setRequestHandler(ConveyorTile.RequestHandler.SERVICE);
+            fullWMSTile = tile;
+        }
+        return fullWMSTile;
     }
 
     public void handleRequest(Conveyor conv) throws GeoWebCacheException {
