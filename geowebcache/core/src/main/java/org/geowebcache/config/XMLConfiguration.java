@@ -994,4 +994,8 @@ public class XMLConfiguration implements Configuration {
         return gwcConfig.getVersion();
     }
 
+    public boolean isFullWMSEnabled() {
+        return gwcConfig.isEnableFullWMS();
+    }
+
 }
