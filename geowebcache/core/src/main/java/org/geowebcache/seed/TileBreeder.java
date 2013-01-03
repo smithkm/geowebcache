@@ -24,8 +24,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 
-import junit.framework.Assert;
-
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
@@ -33,6 +31,8 @@ import org.geowebcache.seed.threaded.ThreadedTileBreeder;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
 import org.springframework.context.ApplicationContextAware;
+
+import org.springframework.util.Assert;
 
 /**
  * Class in charge of dispatching seed/truncate tasks.
@@ -224,12 +224,12 @@ public abstract boolean terminateGWCTask(long id);
 public abstract Iterable<TileLayer> getLayers();
 
 protected Callable<GWCTask> wrapTask(GWCTask task) {
-    Assert.assertSame(this, task.parentJob.getBreeder());
+    Assert.isTrue(this == task.parentJob.getBreeder());
     return new MTSeeder(task);
 }
 
 protected void setTaskState(GWCTask task, GWCTask.STATE state){
-    Assert.assertSame(this, task.parentJob.getBreeder());
+    Assert.isTrue(this == task.parentJob.getBreeder());
     task.state = state;
 }
 
