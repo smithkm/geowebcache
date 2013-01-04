@@ -88,13 +88,6 @@ public abstract class TileBreeder {
     
     private StorageBroker storageBroker;
 
-    public TileBreeder(TileLayerDispatcher layerDispatcher,
-            StorageBroker storageBroker) {
-        super();
-        this.layerDispatcher = layerDispatcher;
-        this.storageBroker = storageBroker;
-    }
-
     /**
      * Find the tile range for a Seed Request.
      * @param req

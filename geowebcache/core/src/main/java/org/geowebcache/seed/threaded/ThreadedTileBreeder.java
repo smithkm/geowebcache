@@ -142,13 +142,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    
-    
-    public ThreadedTileBreeder(TileLayerDispatcher layerDispatcher,
-            StorageBroker storageBroker) {
-        super(layerDispatcher, storageBroker);
-    }
-
     private static class SubmittedTask {
         public final GWCTask task;
 
