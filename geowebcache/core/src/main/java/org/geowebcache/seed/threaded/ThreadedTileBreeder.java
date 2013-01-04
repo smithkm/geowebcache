@@ -41,13 +41,8 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
-import org.geowebcache.grid.BoundingBox;
-import org.geowebcache.grid.GridSubset;
-import org.geowebcache.grid.SRS;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
-import org.geowebcache.mime.MimeException;
-import org.geowebcache.mime.MimeType;
 import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.Job;
 import org.geowebcache.seed.JobStatus;
@@ -124,10 +119,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
 
     private ThreadPoolExecutor threadPool;
 
-    private TileLayerDispatcher layerDispatcher;
-
-    private StorageBroker storageBroker;
-
     /**
      * How many retries per failed tile. 0 = don't retry, 1 = retry once if failed, etc
      */
@@ -150,6 +141,13 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
     private AtomicLong currentJobId = new AtomicLong();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    
+    
+    public ThreadedTileBreeder(TileLayerDispatcher layerDispatcher,
+            StorageBroker storageBroker) {
+        super(layerDispatcher, storageBroker);
+    }
 
     private static class SubmittedTask {
         public final GWCTask task;
@@ -206,44 +204,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
                     + "'. Using default value: " + defaultVal);
         }
         return defaultVal;
-    }
-
-    /**
-     * Create and dispatch tasks to fulfil a seed request
-     * 
-     * @param layerName
-     * @param sr
-     * @throws GeoWebCacheException
-     */
-    // TODO: The SeedRequest specifies a layer name. Would it make sense to use that instead of including one as a separate parameter?
-    public void seed(final String layerName, final SeedRequest sr) throws GeoWebCacheException {
-
-        TileLayer tl = findTileLayer(layerName);
-
-        TileRange tr = createTileRange(sr, tl);
-
-        Job job = createJob(tr, tl, sr.getType(), sr.getThreadCount(),
-                sr.getFilterUpdate());
-
-        dispatchJob(job);
-    }
-
-    /**
-     * Create a job manipulate the cache (Seed, truncate, etc)  It will still need to be dispatched.
-     * 
-     * @param tr The range of tiles to work on.
-     * @param type The type of task(s) to create
-     * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
-     * @param filterUpdate // TODO: What does this do?
-     * @return Array of tasks.  Will have length threadCount or 1.
-     * @throws GeoWebCacheException
-     */
-    public Job createJob(TileRange tr, GWCTask.TYPE type, int threadCount,
-            boolean filterUpdate) throws GeoWebCacheException {
-
-        String layerName = tr.getLayerName();
-        TileLayer tileLayer = layerDispatcher.getTileLayer(layerName);
-        return createJob(tr, tileLayer, type, threadCount, filterUpdate);
     }
 
     /**
@@ -307,74 +267,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         } finally {
             lock.writeLock().unlock();
         }
-    }
-
-    /**
-     * Find the tile range for a Seed Request.
-     * @param req
-     * @param tl 
-     * @return
-     * @throws GeoWebCacheException
-     */
-    public static TileRange createTileRange(SeedRequest req, TileLayer tl)
-            throws GeoWebCacheException {
-        int zoomStart = req.getZoomStart().intValue();
-        int zoomStop = req.getZoomStop().intValue();
-
-        MimeType mimeType = null;
-        String format = req.getMimeFormat();
-        if (format == null) {
-            mimeType = tl.getMimeTypes().get(0);
-        } else {
-            try {
-                mimeType = MimeType.createFromFormat(format);
-            } catch (MimeException e4) {
-                e4.printStackTrace();
-            }
-        }
-
-        String gridSetId = req.getGridSetId();
-
-        if (gridSetId == null) {
-            SRS srs = req.getSRS();
-            List<GridSubset> crsMatches = tl.getGridSubsetsForSRS(srs);
-            if (!crsMatches.isEmpty()) {
-                if (crsMatches.size() == 1) {
-                    gridSetId = crsMatches.get(0).getName();
-                } else {
-                    throw new IllegalArgumentException(
-                            "More than one GridSubet matches the requested SRS " + srs
-                                    + ". gridSetId must be specified");
-                }
-            }
-        }
-        if (gridSetId == null) {
-            gridSetId = tl.getGridSubsets().iterator().next();
-        }
-
-        GridSubset gridSubset = tl.getGridSubset(gridSetId);
-
-        if (gridSubset == null) {
-            throw new GeoWebCacheException("Unknown grid set " + gridSetId);
-        }
-
-        long[][] coveredGridLevels;
-
-        BoundingBox bounds = req.getBounds();
-        if (bounds == null) {
-            coveredGridLevels = gridSubset.getCoverages();
-        } else {
-            coveredGridLevels = gridSubset.getCoverageIntersections(bounds);
-        }
-
-        int[] metaTilingFactors = tl.getMetaTilingFactors();
-
-        coveredGridLevels = gridSubset.expandToMetaFactors(coveredGridLevels, metaTilingFactors);
-
-        String layerName = tl.getName();
-        Map<String, String> parameters = req.getParameters();
-        return new TileRange(layerName, gridSetId, zoomStart, zoomStop, coveredGridLevels,
-                mimeType, parameters);
     }
 
     /**
@@ -506,20 +398,8 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         }
     }
 
-    public void setTileLayerDispatcher(TileLayerDispatcher tileLayerDispatcher) {
-        layerDispatcher = tileLayerDispatcher;
-    }
-
     public void setThreadPoolExecutor(SeederThreadPoolExecutor stpe) {
         threadPool = stpe;
-    }
-
-    public void setStorageBroker(StorageBroker sb) {
-        storageBroker = sb;
-    }
-
-    public StorageBroker getStorageBroker() {
-        return storageBroker;
     }
 
     /**
@@ -531,7 +411,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
     public TileLayer findTileLayer(String layerName) throws GeoWebCacheException {
         TileLayer layer = null;
 
-        layer = layerDispatcher.getTileLayer(layerName);
+        layer = getTileLayerDispatcher().getTileLayer(layerName);
 
         if (layer == null) {
             throw new GeoWebCacheException("Uknown layer: " + layerName);
@@ -611,7 +491,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
      * @return
      */
     public Iterable<TileLayer> getLayers() {
-        return this.layerDispatcher.getLayerList();
+        return getTileLayerDispatcher().getLayerList();
     }
 
     protected long getNextTaskId() {
@@ -633,4 +513,5 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
     protected TruncateTask createTruncateTask(TruncateJob job) {
         return super.createTruncateTask(job);
     }
+
 }

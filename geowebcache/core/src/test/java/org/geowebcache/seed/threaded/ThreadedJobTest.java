@@ -6,6 +6,7 @@ import org.geowebcache.seed.AbstractJobTest;
 import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.Job;
+import org.geowebcache.seed.TileBreeder;
 
 import org.geowebcache.storage.TileRangeIterator;
 
@@ -19,7 +20,7 @@ public class ThreadedJobTest extends AbstractJobTest {
      */
     @Override
     protected Job jobWithTaskStates(STATE... states) {
-        ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
         replay(breeder);
         TileLayer tl = createMock(TileLayer.class);
         replay(tl);
@@ -42,7 +43,7 @@ public class ThreadedJobTest extends AbstractJobTest {
 
     @Override
     protected Job initNextLocation(TileRangeIterator tri) {
-        ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
         replay(breeder);
         TileLayer tl = createMock(TileLayer.class);
         replay(tl);

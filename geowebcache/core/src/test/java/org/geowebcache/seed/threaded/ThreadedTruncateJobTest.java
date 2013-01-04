@@ -14,6 +14,7 @@ import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.Job;
 import org.geowebcache.seed.SeedRequest;
+import org.geowebcache.seed.TileBreeder;
 import org.geowebcache.seed.TruncateJob;
 import org.geowebcache.seed.TruncateTask;
 import org.geowebcache.storage.StorageBroker;
@@ -27,22 +28,10 @@ import static org.geowebcache.TestHelpers.createRequest;
 
 public class ThreadedTruncateJobTest extends AbstractJobTest {
 
-private ThreadedTileBreeder makeMockBreeder(TruncateTask mockTask) {
-    final Capture<TruncateJob> jobCap = new Capture<TruncateJob>();
-    ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
-    expect(breeder.createTruncateTask(capture(jobCap))).andReturn(mockTask);
-    expect(mockTask.getJob()).andStubAnswer(new IAnswer<Job>(){
-
-        public Job answer() throws Throwable {
-            return jobCap.getValue();
-        }});
-    return breeder;
-}
-
 @Override
 protected Job initNextLocation(TileRangeIterator tri) {
-    final TruncateTask task = createMock(TruncateTask.class);
-    final ThreadedTileBreeder breeder = makeMockBreeder(task);
+    final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+    final TruncateTask task = createMockTruncateTask(breeder);
     replay(task);
     replay(breeder);
     
@@ -58,8 +47,8 @@ protected Job initNextLocation(TileRangeIterator tri) {
 
 @Override
 protected Job jobWithTaskStates(STATE... states) {
-    final TruncateTask task = createMock(TruncateTask.class);
-    final ThreadedTileBreeder breeder = makeMockBreeder(task);
+    final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+    final TruncateTask task = createMockTruncateTask(breeder);
     expect(task.getState()).andReturn(states[0]).anyTimes();
     replay(task);
     replay(breeder);
@@ -124,8 +113,8 @@ public void testSeedStoredTiles() throws Exception {
     TileRangeIterator trIter = new TileRangeIterator(tr, tl.getMetaTilingFactors());
 
     
-    final TruncateTask task = createMock(TruncateTask.class);
-    final ThreadedTileBreeder breeder = makeMockBreeder(task);
+    final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+    final TruncateTask task = createMockTruncateTask(breeder);
     expect(task.getState()).andStubReturn(STATE.READY);
     expectDoActionInternal(task);
     expectDispose(task);

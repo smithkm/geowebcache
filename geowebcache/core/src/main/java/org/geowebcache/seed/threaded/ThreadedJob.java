@@ -15,6 +15,7 @@ import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.Job;
 import org.geowebcache.seed.JobStatus;
 import org.geowebcache.seed.TaskStatus;
+import org.geowebcache.seed.TileBreeder;
 import org.geowebcache.seed.TileRequest;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
@@ -32,7 +33,7 @@ abstract class ThreadedJob implements Job {
     private static final Log log = LogFactory.getLog(GWCTask.class);
     
     final private AtomicLong activeThreads = new AtomicLong();
-    final protected ThreadedTileBreeder breeder;
+    final protected TileBreeder breeder;
     final protected int threadCount;
     final protected long id;
     final protected TileRangeIterator tri;
@@ -52,7 +53,7 @@ abstract class ThreadedJob implements Job {
      * @param tri iterator over the tiles to be handled
      * @param doFilterUpdate update relevant filters on the layer after the job completes
      */
-    protected ThreadedJob(long id, ThreadedTileBreeder breeder, TileLayer tl, int threadCount, 
+    protected ThreadedJob(long id, TileBreeder breeder, TileLayer tl, int threadCount, 
             TileRangeIterator tri, boolean doFilterUpdate) {
 
         Assert.notNull(breeder);
@@ -71,7 +72,7 @@ abstract class ThreadedJob implements Job {
 
     protected GWCTask[] threads;
 
-    public ThreadedTileBreeder getBreeder() {
+    public TileBreeder getBreeder() {
         return breeder;
     }
 

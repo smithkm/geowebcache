@@ -22,11 +22,18 @@ package org.geowebcache.seed;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.geowebcache.GeoWebCacheException;
+import org.geowebcache.grid.BoundingBox;
+import org.geowebcache.grid.GridSubset;
+import org.geowebcache.grid.SRS;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
+import org.geowebcache.mime.MimeException;
+import org.geowebcache.mime.MimeType;
 import org.geowebcache.seed.threaded.ThreadedTileBreeder;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
@@ -77,184 +84,292 @@ import org.springframework.util.Assert;
  * @author Kevin Smith, based on Gabriel Roldan's class, now renamed {@link ThreadedTileBreeder}
  */
 public abstract class TileBreeder {
+    private TileLayerDispatcher layerDispatcher;
+    
+    private StorageBroker storageBroker;
 
-/**
- * Create and dispatch tasks to fulfil a seed request
- * 
- * @param layerName
- * @param sr
- * @throws GeoWebCacheException
- */
-// TODO: The SeedRequest specifies a layer name. Would it make sense to use that instead of including one as a separate parameter?
-public abstract void seed(String layerName, SeedRequest sr)
-        throws GeoWebCacheException;
+    public TileBreeder(TileLayerDispatcher layerDispatcher,
+            StorageBroker storageBroker) {
+        super();
+        this.layerDispatcher = layerDispatcher;
+        this.storageBroker = storageBroker;
+    }
 
-/**
- * Create tasks to manipulate the cache (Seed, truncate, etc)  They will still need to be dispatched.
- * 
- * @param tr The range of tiles to work on.
- * @param type The type of task(s) to create
- * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
- * @param filterUpdate // TODO: What does this do?
- * @return Array of tasks.  Will have length threadCount or 1.
- * @throws GeoWebCacheException
- */
-public abstract Job createJob(TileRange tr, GWCTask.TYPE type,
-        int threadCount, boolean filterUpdate) throws GeoWebCacheException;
+    /**
+     * Find the tile range for a Seed Request.
+     * @param req
+     * @param tl 
+     * @return
+     * @throws GeoWebCacheException
+     */
+    // FIXME Might make more sense to be on SeedRequest?
+    public static TileRange createTileRange(SeedRequest req, TileLayer tl)
+            throws GeoWebCacheException {
+        int zoomStart = req.getZoomStart().intValue();
+        int zoomStop = req.getZoomStop().intValue();
+    
+        MimeType mimeType = null;
+        String format = req.getMimeFormat();
+        if (format == null) {
+            mimeType = tl.getMimeTypes().get(0);
+        } else {
+            try {
+                mimeType = MimeType.createFromFormat(format);
+            } catch (MimeException e4) {
+                e4.printStackTrace();
+            }
+        }
+    
+        String gridSetId = req.getGridSetId();
+    
+        if (gridSetId == null) {
+            SRS srs = req.getSRS();
+            List<GridSubset> crsMatches = tl.getGridSubsetsForSRS(srs);
+            if (!crsMatches.isEmpty()) {
+                if (crsMatches.size() == 1) {
+                    gridSetId = crsMatches.get(0).getName();
+                } else {
+                    throw new IllegalArgumentException(
+                            "More than one GridSubet matches the requested SRS " + srs
+                                    + ". gridSetId must be specified");
+                }
+            }
+        }
+        if (gridSetId == null) {
+            gridSetId = tl.getGridSubsets().iterator().next();
+        }
+    
+        GridSubset gridSubset = tl.getGridSubset(gridSetId);
+    
+        if (gridSubset == null) {
+            throw new GeoWebCacheException("Unknown grid set " + gridSetId);
+        }
+    
+        long[][] coveredGridLevels;
+    
+        BoundingBox bounds = req.getBounds();
+        if (bounds == null) {
+            coveredGridLevels = gridSubset.getCoverages();
+        } else {
+            coveredGridLevels = gridSubset.getCoverageIntersections(bounds);
+        }
+    
+        int[] metaTilingFactors = tl.getMetaTilingFactors();
+    
+        coveredGridLevels = gridSubset.expandToMetaFactors(coveredGridLevels, metaTilingFactors);
+    
+        String layerName = tl.getName();
+        Map<String, String> parameters = req.getParameters();
+        return new TileRange(layerName, gridSetId, zoomStart, zoomStop, coveredGridLevels,
+                mimeType, parameters);
+    }
 
-/**
- * Create tasks to manipulate the cache (Seed, truncate, etc).  They will still need to be dispatched.
- * 
- * @param tr The range of tiles to work on.
- * @param tl The layer to work on.  Overrides any layer specified on tr.
- * @param type The type of task(s) to create
- * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
- * @param filterUpdate // TODO: What does this do?
- * @return Array of tasks.  Will have length threadCount or 1.
- * @throws GeoWebCacheException
- */
-public abstract Job createJob(TileRange tr, TileLayer tl,
-        GWCTask.TYPE type, int threadCount, boolean filterUpdate)
-        throws GeoWebCacheException;
+    /**
+     * Create and dispatch tasks to fulfil a seed request
+     * 
+     * @param layerName
+     * @param sr
+     * @throws GeoWebCacheException
+     */
+    // TODO: The SeedRequest specifies a layer name. Would it make sense to use that instead of including one as a separate parameter?
+    public void seed(String layerName, SeedRequest sr)
+            throws GeoWebCacheException{
+        TileLayer tl = findTileLayer(layerName);
+    
+        TileRange tr = createTileRange(sr, tl);
+    
+        Job job = createJob(tr, tl, sr.getType(), sr.getThreadCount(),
+                sr.getFilterUpdate());
+    
+        dispatchJob(job);
+    }
+    
+    /**
+     * Create tasks to manipulate the cache (Seed, truncate, etc)  They will still need to be dispatched.
+     * 
+     * @param tr The range of tiles to work on.
+     * @param type The type of task(s) to create
+     * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
+     * @param filterUpdate // TODO: What does this do?
+     * @return Array of tasks.  Will have length threadCount or 1.
+     * @throws GeoWebCacheException
+     */
+    public Job createJob(TileRange tr, GWCTask.TYPE type,
+            int threadCount, boolean filterUpdate) throws GeoWebCacheException{
 
-/**
- * Dispatches a Job
- * 
- * @param job
- */
-public abstract void dispatchJob(Job job);
-
-/**
- * Method returns List of Strings representing the status of the currently running and scheduled
- * threads
- * 
- * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
- *         where {@code taskStatus} is one of:
- *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
- * @deprecated
- */
-public abstract long[][] getStatusList();
-
-/**
- * Method returns List of Strings representing the status of the currently running and scheduled
- * threads for a specific layer.
- * 
- * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
- *         where {@code taskStatus} is one of:
- *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
- * @param layerName the name of the layer.  null for all layers.
- * @return
- * @deprecated
- */
-public abstract long[][] getStatusList(String layerName);
-
-/**
- * Get the status of currently running or scheduled Jobs.
- * @return
- */
-public abstract Collection<JobStatus> getJobStatusList();
-
-/**
- * Get the status of currently running or scheduled Jobs on a specific layer.
- * @param layerName the name of the layer.  null for all layers.
- * @return
- */
-public abstract Collection<JobStatus> getJobStatusList(String layerName);
-
-/**
- * Get the status of currently running or scheduled Tasks.
- * @return
- */
-public abstract Collection<TaskStatus> getTaskStatusList();
-
-/**
- * Get the status of currently running or scheduled Tasks on a specific layer.
- * @param layerName the name of the layer.  null for all layers.
- * @return
- */
-public abstract Collection<TaskStatus> getTaskStatusList(String layerName);
-
-public abstract void setTileLayerDispatcher(
-        TileLayerDispatcher tileLayerDispatcher);
-
-public abstract void setThreadPoolExecutor(SeederThreadPoolExecutor stpe);
-
-public abstract void setStorageBroker(StorageBroker sb);
-
-public abstract StorageBroker getStorageBroker();
-
-/**
- * Find a layer by name.
- * @param layerName
- * @return
- * @throws GeoWebCacheException
- */
-public abstract TileLayer findTileLayer(String layerName)
-        throws GeoWebCacheException;
-
-/**
- * Get all tasks that are running
- * @return
- */
-public abstract Iterator<GWCTask> getRunningTasks();
-
-/**
- * Get all tasks that are running or waiting to run.
- * @return
- */
-public abstract Iterator<GWCTask> getRunningAndPendingTasks();
-
-/**
- * Get all tasks that are waiting to run.
- * @return
- */
-public abstract Iterator<GWCTask> getPendingTasks();
-
-/**
- * Terminate a running or pending task
- * @param id
- * @return
- */
-public abstract boolean terminateGWCTask(long id);
-
-/**
- * Get an iterator over the layers.
- * @return
- */
-public abstract Iterable<TileLayer> getLayers();
-
-protected Callable<GWCTask> wrapTask(GWCTask task) {
-    Assert.isTrue(this == task.parentJob.getBreeder());
-    return new MTSeeder(task);
-}
-
-protected void setTaskState(GWCTask task, GWCTask.STATE state){
-    Assert.isTrue(this == task.parentJob.getBreeder());
-    task.state = state;
-}
-
-/**
- * Returns a unique ID for a new task.
- * @return
- */
-protected abstract long getNextTaskId();
-
-/**
- * Creates a new SeedTask for the specified Job
- * @param job
- * @return
- */
-protected SeedTask createSeedTask(SeedJob job) {
-    return new SeedTask(getNextTaskId(), job);
-}
-
-/**
- * Creates a new TruncateTask for the specified Job
- * @param job
- * @return
- */
-protected TruncateTask createTruncateTask(TruncateJob job) {
-    return new TruncateTask(getNextTaskId(), job);
-}
+        String layerName = tr.getLayerName();
+        TileLayer tileLayer = layerDispatcher.getTileLayer(layerName);
+        return createJob(tr, tileLayer, type, threadCount, filterUpdate);
+    }
+    
+    /**
+     * Create tasks to manipulate the cache (Seed, truncate, etc).  They will still need to be dispatched.
+     * 
+     * @param tr The range of tiles to work on.
+     * @param tl The layer to work on.  Overrides any layer specified on tr.
+     * @param type The type of task(s) to create
+     * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
+     * @param filterUpdate // TODO: What does this do?
+     * @return Array of tasks.  Will have length threadCount or 1.
+     * @throws GeoWebCacheException
+     */
+    public abstract Job createJob(TileRange tr, TileLayer tl,
+            GWCTask.TYPE type, int threadCount, boolean filterUpdate)
+            throws GeoWebCacheException;
+    
+    /**
+     * Dispatches a Job
+     * 
+     * @param job
+     */
+    public abstract void dispatchJob(Job job);
+    
+    /**
+     * Method returns List of Strings representing the status of the currently running and scheduled
+     * threads
+     * 
+     * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
+     *         where {@code taskStatus} is one of:
+     *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
+     * @deprecated
+     */
+    public abstract long[][] getStatusList();
+    
+    /**
+     * Method returns List of Strings representing the status of the currently running and scheduled
+     * threads for a specific layer.
+     * 
+     * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
+     *         where {@code taskStatus} is one of:
+     *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
+     * @param layerName the name of the layer.  null for all layers.
+     * @return
+     * @deprecated
+     */
+    public abstract long[][] getStatusList(String layerName);
+    
+    /**
+     * Get the status of currently running or scheduled Jobs.
+     * @return
+     */
+    public abstract Collection<JobStatus> getJobStatusList();
+    
+    /**
+     * Get the status of currently running or scheduled Jobs on a specific layer.
+     * @param layerName the name of the layer.  null for all layers.
+     * @return
+     */
+    public abstract Collection<JobStatus> getJobStatusList(String layerName);
+    
+    /**
+     * Get the status of currently running or scheduled Tasks.
+     * @return
+     */
+    public abstract Collection<TaskStatus> getTaskStatusList();
+    
+    /**
+     * Get the status of currently running or scheduled Tasks on a specific layer.
+     * @param layerName the name of the layer.  null for all layers.
+     * @return
+     */
+    public abstract Collection<TaskStatus> getTaskStatusList(String layerName);
+    
+    public void setTileLayerDispatcher(
+            TileLayerDispatcher tileLayerDispatcher){
+        this.layerDispatcher = tileLayerDispatcher;
+    }
+    protected TileLayerDispatcher getTileLayerDispatcher(){
+        return this.layerDispatcher;
+    }
+    
+    public abstract void setThreadPoolExecutor(SeederThreadPoolExecutor stpe);
+    
+    /**
+     * Set the StorageBroker this Breeder is seeding into.
+     */
+    public void setStorageBroker(StorageBroker sb){
+        this.storageBroker = sb;
+    }
+    
+    /**
+     * Get the StorageBroker this Breeder is seeding into.
+     */
+    public StorageBroker getStorageBroker(){
+        return storageBroker;
+    }
+    
+    /**
+     * Find a layer by name.
+     * @param layerName
+     * @return
+     * @throws GeoWebCacheException
+     */
+    public abstract TileLayer findTileLayer(String layerName)
+            throws GeoWebCacheException;
+    
+    /**
+     * Get all tasks that are running
+     * @return
+     */
+    public abstract Iterator<GWCTask> getRunningTasks();
+    
+    /**
+     * Get all tasks that are running or waiting to run.
+     * @return
+     */
+    public abstract Iterator<GWCTask> getRunningAndPendingTasks();
+    
+    /**
+     * Get all tasks that are waiting to run.
+     * @return
+     */
+    public abstract Iterator<GWCTask> getPendingTasks();
+    
+    /**
+     * Terminate a running or pending task
+     * @param id
+     * @return
+     */
+    public abstract boolean terminateGWCTask(long id);
+    
+    /**
+     * Get an iterator over the layers.
+     * @return
+     */
+    public abstract Iterable<TileLayer> getLayers();
+    
+    protected Callable<GWCTask> wrapTask(GWCTask task) {
+        Assert.isTrue(this == task.parentJob.getBreeder());
+        return new MTSeeder(task);
+    }
+    
+    protected void setTaskState(GWCTask task, GWCTask.STATE state){
+        Assert.isTrue(this == task.parentJob.getBreeder());
+        task.state = state;
+    }
+    
+    /**
+     * Returns a unique ID for a new task.
+     * @return
+     */
+    protected abstract long getNextTaskId();
+    
+    /**
+     * Creates a new SeedTask for the specified Job
+     * @param job
+     * @return
+     */
+    protected SeedTask createSeedTask(SeedJob job) {
+        return new SeedTask(getNextTaskId(), job);
+    }
+    
+    /**
+     * Creates a new TruncateTask for the specified Job
+     * @param job
+     * @return
+     */
+    protected TruncateTask createTruncateTask(TruncateJob job) {
+        return new TruncateTask(getNextTaskId(), job);
+    }
 
 }

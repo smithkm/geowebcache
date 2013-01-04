@@ -1,9 +1,13 @@
 package org.geowebcache.seed;
 
+import static org.easymock.EasyMock.capture;
+import static org.easymock.EasyMock.expect;
 import static org.easymock.classextension.EasyMock.*;
 
 import java.lang.Thread.State;
 
+import org.easymock.Capture;
+import org.easymock.IAnswer;
 import org.easymock.IExpectationSetters;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.Job;
@@ -247,6 +251,43 @@ public void testTerminate() throws Exception {
     for(GWCTask task: job.getTasks()){
         verify(task);
     }
+}
+
+/**
+ * Create a mock SeedTask, and expect a call to the breeder's createSeedTask method returning the created task
+ * @param mockBreeder an EasyMock mock of a TileBreeder in its record phase
+ * @return a mock SeedTask in its record phase
+ */
+protected SeedTask createMockSeedTask(TileBreeder mockBreeder) {
+    final SeedTask task = createMock(SeedTask.class);
+    final Capture<SeedJob> jobCap = new Capture<SeedJob>();
+    expect(mockBreeder.createSeedTask(capture(jobCap))).andReturn(task).once();
+    expect(task.getJob()).andStubAnswer(new IAnswer<SeedJob>(){
+        // The task should report that it belongs to the captured job
+        public SeedJob answer() throws Throwable {
+            return jobCap.getValue();
+        }
+
+    });
+    return task;
+}
+/**
+ * Create a mock task, and expect a call to the breeder's createTruncateTask method returning the created task
+ * @param mockBreeder an EasyMock mock of a TileBreeder in its record phase
+ * @return a mock TruncateTask in its record phase
+ */
+protected TruncateTask createMockTruncateTask(TileBreeder mockBreeder) {
+    final TruncateTask task = createMock(TruncateTask.class);
+    final Capture<TruncateJob> jobCap = new Capture<TruncateJob>();
+    expect(mockBreeder.createTruncateTask(capture(jobCap))).andReturn(task).once();
+    expect(task.getJob()).andStubAnswer(new IAnswer<TruncateJob>(){
+        // The task should report that it belongs to the captured job
+        public TruncateJob answer() throws Throwable {
+            return jobCap.getValue();
+        }
+
+    });
+    return task;
 }
 
 }

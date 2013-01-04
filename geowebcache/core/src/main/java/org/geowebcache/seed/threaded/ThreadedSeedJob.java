@@ -10,6 +10,7 @@ import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.SeedJob;
+import org.geowebcache.seed.TileBreeder;
 import org.geowebcache.seed.TileRequest;
 import org.geowebcache.storage.TileRangeIterator;
 import org.springframework.util.Assert;
