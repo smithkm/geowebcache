@@ -47,6 +47,7 @@ protected Job initNextLocation(TileRangeIterator tri) {
 
 @Override
 protected Job jobWithTaskStates(STATE... states) {
+    assertEquals(1, states.length);
     final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
     final TruncateTask task = createMockTruncateTask(breeder);
     expect(task.getState()).andReturn(states[0]).anyTimes();
@@ -71,6 +72,11 @@ protected void assertGetState(STATE expected, STATE... states) {
     } else {
         // Don't test as this job can never have more than one task.
     }
+}
+
+@Override
+public void testTerminate() throws Exception {
+    // Test uses multiple jobs so skip.
 }
 
 /**

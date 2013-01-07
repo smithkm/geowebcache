@@ -252,6 +252,29 @@ public void testTerminate() throws Exception {
         verify(task);
     }
 }
+/**
+ * Test the terminate method with single tasks
+ * @throws Exception
+ */
+public void testTerminateSingle() throws Exception {
+    
+    STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY};
+    
+    for(STATE s: states){
+        Job job = jobWithTaskStates(s);
+        GWCTask task = job.getTasks()[0];
+        reset(task);
+        
+        expect(task.getState()).andReturn(s).anyTimes();
+        if(s != STATE.DEAD && s != STATE.DONE){
+            task.terminateNicely();
+            expectLastCall().once();
+        }
+        replay(task);
+        job.terminate();
+        verify(task);
+    }
+}
 
 /**
  * Create a mock SeedTask, and expect a call to the breeder's createSeedTask method returning the created task
