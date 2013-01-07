@@ -29,7 +29,7 @@ import static org.geowebcache.TestHelpers.createRequest;
 public class ThreadedTruncateJobTest extends AbstractJobTest {
 
 @Override
-protected Job initNextLocation(TileRangeIterator tri) {
+protected Job initNextLocation(TileRangeIterator tri) throws Exception {
     final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
     final TruncateTask task = createMockTruncateTask(breeder);
     replay(task);
@@ -46,7 +46,7 @@ protected Job initNextLocation(TileRangeIterator tri) {
 }
 
 @Override
-protected Job jobWithTaskStates(STATE... states) {
+protected Job jobWithTaskStates(STATE... states) throws Exception {
     assertEquals(1, states.length);
     final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
     final TruncateTask task = createMockTruncateTask(breeder);
@@ -66,7 +66,7 @@ protected Job jobWithTaskStates(STATE... states) {
 }
 
 @Override
-protected void assertGetState(STATE expected, STATE... states) {
+protected void assertGetState(STATE expected, STATE... states) throws Exception {
     if(states.length<=1){
         super.assertGetState(expected, states);
     } else {

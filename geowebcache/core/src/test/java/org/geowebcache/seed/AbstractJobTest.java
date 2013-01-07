@@ -55,14 +55,14 @@ protected  IExpectationSetters<Object> expectDispose(GWCTask mockTask) throws Ex
  * @param tri
  * @return
  */
-protected abstract Job initNextLocation(TileRangeIterator tri);
+protected abstract Job initNextLocation(TileRangeIterator tri) throws Exception;
 
 /**
  * Assert that a TileRequest is at the specified grid location
  * @param tr TileRequest to compare
  * @param gridLoc expected grid location {x,y,zoom}
  */
-public static void assertTileRequestAt(TileRequest tr, long[] gridLoc){
+public static void assertTileRequestAt(TileRequest tr, long[] gridLoc) throws Exception {
     assertTrue(String.format("Expected: TileRequest at <%d, %d, %d>, Result: TileRequest at <%d, %d, %d>", gridLoc[0], gridLoc[1], gridLoc[2], tr.getX(), tr.getY(), tr.getZoom()),
             tr.getX()==gridLoc[0] && tr.getY()==gridLoc[1] && tr.getZoom()==gridLoc[2]);
 }
@@ -97,14 +97,14 @@ public void testGetNextRequest() throws Exception {
  * @param states
  * @return
  */
-protected abstract Job jobWithTaskStates(STATE... states);
+protected abstract Job jobWithTaskStates(STATE... states) throws Exception;
 
 /**
  * Assert that a job with tasks in the given states has the expected state.
  * @param expected The state expected of the job
  * @param states The states of the tasks in the job
  */
-protected void assertGetState(STATE expected, STATE... states) {
+protected void assertGetState(STATE expected, STATE... states) throws Exception{
     Job job = jobWithTaskStates(states);
     assertEquals(expected, job.getState());
 }
@@ -281,7 +281,7 @@ public void testTerminateSingle() throws Exception {
  * @param mockBreeder an EasyMock mock of a TileBreeder in its record phase
  * @return a mock SeedTask in its record phase
  */
-protected SeedTask createMockSeedTask(TileBreeder mockBreeder) {
+protected SeedTask createMockSeedTask(TileBreeder mockBreeder) throws Exception {
     final SeedTask task = createMock(SeedTask.class);
     final Capture<SeedJob> jobCap = new Capture<SeedJob>();
     expect(mockBreeder.createSeedTask(capture(jobCap))).andReturn(task).once();
@@ -299,7 +299,7 @@ protected SeedTask createMockSeedTask(TileBreeder mockBreeder) {
  * @param mockBreeder an EasyMock mock of a TileBreeder in its record phase
  * @return a mock TruncateTask in its record phase
  */
-protected TruncateTask createMockTruncateTask(TileBreeder mockBreeder) {
+protected TruncateTask createMockTruncateTask(TileBreeder mockBreeder) throws Exception {
     final TruncateTask task = createMock(TruncateTask.class);
     final Capture<TruncateJob> jobCap = new Capture<TruncateJob>();
     expect(mockBreeder.createTruncateTask(capture(jobCap))).andReturn(task).once();
