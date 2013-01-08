@@ -4,30 +4,21 @@ import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.classextension.EasyMock.*;
 
-import java.lang.Thread.State;
-
 import org.easymock.Capture;
 import org.easymock.IAnswer;
 import org.easymock.IExpectationSetters;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.Job;
 import org.geowebcache.storage.TileRangeIterator;
+import org.junit.Test;
 
-import junit.framework.TestCase;
+import static junit.framework.Assert.*;
 
 /**
  * Tests for common behaviour of classes implementing the Job interface.
  *
  */
-public abstract class AbstractJobTest extends TestCase {
-
-public AbstractJobTest() {
-    super();
-}
-
-public AbstractJobTest(String name) {
-    super(name);
-}
+public abstract class AbstractJobTest {
 
 /**
  * Expect doActionInternal to be called on a mock GWCTask.
@@ -71,6 +62,7 @@ public static void assertTileRequestAt(TileRequest tr, long[] gridLoc) throws Ex
  * Test that getNextRequest behaves as expected
  * @throws Exception
  */
+@Test
 public void testGetNextRequest() throws Exception {
     TileRangeIterator tri = createMock(TileRangeIterator.class);
     
@@ -113,6 +105,7 @@ protected void assertGetState(STATE expected, STATE... states) throws Exception{
  * Test that getState gives correct results for a single task.
  * @throws Exception
  */
+@Test
 public void testGetStateSingle() throws Exception {
     
     assertGetState(STATE.READY, 
@@ -135,6 +128,7 @@ public void testGetStateSingle() throws Exception {
  * Test that getState returns DONE when expected.
  * @throws Exception
  */
+@Test
 public void testGetStateDone() throws Exception {
     assertGetState(STATE.DONE, 
             STATE.DONE, STATE.DONE);
@@ -157,6 +151,7 @@ public void testGetStateDone() throws Exception {
  * Test that getState returns READY when expected
  * @throws Exception
  */
+@Test
 public void testGetStateReady() throws Exception {
     assertGetState(STATE.READY, 
             STATE.READY, STATE.READY);
@@ -176,6 +171,7 @@ public void testGetStateReady() throws Exception {
  * Test that getState returns RUNNING when expected
  * @throws Exception
  */
+@Test
 public void testGetStateRunning() throws Exception {
     assertGetState(STATE.RUNNING, 
             STATE.RUNNING, STATE.RUNNING);
@@ -193,6 +189,7 @@ public void testGetStateRunning() throws Exception {
  * Test that getState returns DEAD when expected
  * @throws Exception
  */
+@Test
 public void testGetStateDead() throws Exception {
     assertGetState(STATE.DEAD, 
             STATE.DEAD, STATE.DEAD);
@@ -223,6 +220,7 @@ public void testGetStateDead() throws Exception {
  * Test that getState returns UNSET when expected
  * @throws Exception
  */
+@Test
 public void testGetStateUnset() throws Exception {
     // This is never expected
 }
@@ -231,6 +229,7 @@ public void testGetStateUnset() throws Exception {
  * Test the terminate method
  * @throws Exception
  */
+@Test
 public void testTerminate() throws Exception {
     Job job = jobWithTaskStates(STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY);
     
@@ -256,6 +255,7 @@ public void testTerminate() throws Exception {
  * Test the terminate method with single tasks
  * @throws Exception
  */
+@Test
 public void testTerminateSingle() throws Exception {
     
     STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY};

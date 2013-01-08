@@ -1,27 +1,20 @@
 package org.geowebcache.seed.threaded;
 
-import org.easymock.Capture;
-import org.easymock.IAnswer;
 import org.easymock.classextension.EasyMock;
 import org.geowebcache.TestHelpers;
 import org.geowebcache.grid.GridSubset;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.wms.WMSLayer;
-import org.geowebcache.layer.wms.WMSSourceHelper;
 import org.geowebcache.seed.AbstractJobTest;
-import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.Job;
 import org.geowebcache.seed.SeedRequest;
-import org.geowebcache.seed.TileBreeder;
-import org.geowebcache.seed.TruncateJob;
 import org.geowebcache.seed.TruncateTask;
 import org.geowebcache.storage.StorageBroker;
-import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
-import org.geowebcache.util.MockWMSSourceHelper;
+import static org.junit.Assert.*;
 
 import static org.easymock.classextension.EasyMock.*;
 import static org.geowebcache.TestHelpers.createRequest;
@@ -114,7 +107,7 @@ public void testSeedStoredTiles() throws Exception {
   
 
     ThreadedTruncateJob job = new ThreadedTruncateJob(1,breeder, trIter, tl, false);
-    assertSame(job.getTasks()[0], task);
+    assertEquals(job.getTasks()[0], task);
     
     job.runSynchronously();
 

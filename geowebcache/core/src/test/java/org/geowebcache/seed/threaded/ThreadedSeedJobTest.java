@@ -55,6 +55,10 @@ import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
 import org.geowebcache.util.MockWMSSourceHelper;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit test suite for {@link ThreadedSeedJob}
@@ -65,8 +69,8 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
     private TileBreeder breeder;
     private StorageBroker storageBroker;
     
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         
         storageBroker = EasyMock.createMock(StorageBroker.class);
         expect(storageBroker.put((TileObject) anyObject())).andReturn(true).anyTimes();
@@ -78,10 +82,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         replay(breeder);
     }
 
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
-    
+
     /**
      * Check that failure and the retry queue work correctly.
      * 
@@ -89,6 +90,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
      * 
      * @throws Exception
      */
+    @Test
     public void testGetNextRequestWithRetry() throws Exception {
         TileRangeIterator tri = createMock(TileRangeIterator.class);
         
@@ -153,6 +155,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
      * 
      * @throws Exception
      */
+    @Test
     public void testGetNextRequestWithMaxRetry() throws Exception {
         TileRangeIterator tri = createMock(TileRangeIterator.class);
         
