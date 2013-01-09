@@ -10,6 +10,7 @@ import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.Job;
 import org.geowebcache.seed.SeedRequest;
+import org.geowebcache.seed.TileBreeder;
 import org.geowebcache.seed.TruncateTask;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
@@ -23,7 +24,7 @@ public class ThreadedTruncateJobTest extends AbstractJobTest {
 
 @Override
 protected Job initNextLocation(TileRangeIterator tri) throws Exception {
-    final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+    final TileBreeder breeder = createMock(ThreadedTileBreeder.class);
     final TruncateTask task = createMockTruncateTask(breeder);
     replay(task);
     replay(breeder);
@@ -41,7 +42,7 @@ protected Job initNextLocation(TileRangeIterator tri) throws Exception {
 @Override
 protected Job jobWithTaskStates(STATE... states) throws Exception {
     assertEquals(1, states.length);
-    final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+    final TileBreeder breeder = createMock(ThreadedTileBreeder.class);
     final TruncateTask task = createMockTruncateTask(breeder);
     expect(task.getState()).andReturn(states[0]).anyTimes();
     replay(task);
@@ -96,7 +97,7 @@ public void testSeedStoredTiles() throws Exception {
     TileRangeIterator trIter = new TileRangeIterator(tr, tl.getMetaTilingFactors());
 
     
-    final ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+    final TileBreeder breeder = createMock(ThreadedTileBreeder.class);
     final TruncateTask task = createMockTruncateTask(breeder);
     expect(task.getState()).andStubReturn(STATE.READY);
     expectDoActionInternal(task);

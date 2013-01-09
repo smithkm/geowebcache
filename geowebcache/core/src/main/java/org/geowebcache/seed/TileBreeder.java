@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.grid.BoundingBox;
 import org.geowebcache.grid.GridSubset;
@@ -37,6 +39,11 @@ import org.geowebcache.mime.MimeType;
 import org.geowebcache.seed.threaded.ThreadedTileBreeder;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
+import org.geowebcache.storage.TileRangeIterator;
+import org.geowebcache.util.GWCVars;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanInitializationException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import org.springframework.util.Assert;
@@ -84,9 +91,35 @@ import org.springframework.util.Assert;
  * @author Kevin Smith, based on Gabriel Roldan's class, now renamed {@link ThreadedTileBreeder}
  */
 public abstract class TileBreeder {
+    private static final String GWC_SEED_ABORT_LIMIT = "GWC_SEED_ABORT_LIMIT";
+
+    private static final String GWC_SEED_RETRY_WAIT = "GWC_SEED_RETRY_WAIT";
+
+    private static final String GWC_SEED_RETRY_COUNT = "GWC_SEED_RETRY_COUNT";
+
     private TileLayerDispatcher layerDispatcher;
     
     private StorageBroker storageBroker;
+
+    protected Map<Long, Job> jobs;
+
+    /**
+     * How many retries per failed tile. 0 = don't retry, 1 = retry once if failed, etc
+     */
+    protected int tileFailureRetryCount = 0;
+
+    /**
+     * How much (in milliseconds) to wait before trying again a failed tile
+     */
+    protected long tileFailureRetryWaitTime = 100;
+
+    /**
+     * How many failures to tolerate before aborting the seed task. Value is shared between all the
+     * threads of the same run.
+     */
+    protected long totalFailuresBeforeAborting = 1000;
+    
+    public static Log log = LogFactory.getLog(ThreadedTileBreeder.class);
 
     /**
      * Find the tile range for a Seed Request.
@@ -195,21 +228,7 @@ public abstract class TileBreeder {
         return createJob(tr, tileLayer, type, threadCount, filterUpdate);
     }
     
-    /**
-     * Create tasks to manipulate the cache (Seed, truncate, etc).  They will still need to be dispatched.
-     * 
-     * @param tr The range of tiles to work on.
-     * @param tl The layer to work on.  Overrides any layer specified on tr.
-     * @param type The type of task(s) to create
-     * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
-     * @param filterUpdate // TODO: What does this do?
-     * @return Array of tasks.  Will have length threadCount or 1.
-     * @throws GeoWebCacheException
-     */
-    public abstract Job createJob(TileRange tr, TileLayer tl,
-            GWCTask.TYPE type, int threadCount, boolean filterUpdate)
-            throws GeoWebCacheException;
-    
+
     /**
      * Dispatches a Job
      * 
@@ -336,6 +355,12 @@ public abstract class TileBreeder {
         return new MTSeeder(task);
     }
     
+    public abstract SeedJob createSeedJob(int threadCount, boolean reseed,
+            TileRangeIterator trIter, TileLayer tl, boolean filterUpdate);
+
+    public abstract TruncateJob createTruncateJob(TileRangeIterator trIter, TileLayer tl,
+            boolean filterUpdate);
+
     protected void setTaskState(GWCTask task, GWCTask.STATE state){
         Assert.isTrue(this == task.parentJob.getBreeder());
         task.state = state;
@@ -365,4 +390,96 @@ public abstract class TileBreeder {
         return new TruncateTask(getNextTaskId(), job);
     }
 
+    /**
+     * Create a job to manipulate the cache (Seed, truncate, etc).  In will still need to be dispatched.
+     * 
+     * @param tr The range of tiles to work on.
+     * @param tl The layer to work on.  Overrides any layer specified on tr.
+     * @param type The type of task(s) to create
+     * @param threadCount The number of threads to use, forced to 1 if type is TRUNCATE
+     * @param filterUpdate // TODO: What does this do?
+     * @return Array of tasks.  Will have length threadCount or 1.
+     * @throws GeoWebCacheException
+     */
+    public Job createJob(TileRange tr, TileLayer tl, GWCTask.TYPE type,
+            int threadCount, boolean filterUpdate) throws GeoWebCacheException {
+            
+                if (type == GWCTask.TYPE.TRUNCATE || threadCount < 1) {
+                    log.trace("Forcing thread count to 1");
+                    threadCount = 1;
+                }
+                TileRangeIterator trIter = new TileRangeIterator(tr, tl.getMetaTilingFactors());
+                Job job;
+                switch (type) {
+                case TRUNCATE:
+                    job = createTruncateJob(trIter, tl, filterUpdate);
+                    break;
+                case SEED:
+                    job = createSeedJob(threadCount, false, trIter, tl, filterUpdate);
+                    break;
+                case RESEED:
+                    job = createSeedJob(threadCount, true, trIter, tl, filterUpdate);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Only SEED, RESEED, and TRUNCATE job types can be created.");
+                }
+                jobs.put(job.getId(), job);
+                return job;
+            }
+
+    /**
+     * Initializes the seed task failure control variables either with the provided environment
+     * variable values or their defaults.
+     * 
+     * @see {@link ThreadedTileBreeder class' javadocs} for more information
+     * @see org.springframework.context.ApplicationContextAware#setApplicationContext(org.springframework.context.ApplicationContext)
+     */
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        String retryCount = GWCVars.findEnvVar(applicationContext, GWC_SEED_RETRY_COUNT);
+        String retryWait = GWCVars.findEnvVar(applicationContext, GWC_SEED_RETRY_WAIT);
+        String abortLimit = GWCVars.findEnvVar(applicationContext, GWC_SEED_ABORT_LIMIT);
+    
+        tileFailureRetryCount = (int) toLong(GWC_SEED_RETRY_COUNT, retryCount, 0);
+        tileFailureRetryWaitTime = toLong(GWC_SEED_RETRY_WAIT, retryWait, 100);
+        totalFailuresBeforeAborting = toLong(GWC_SEED_ABORT_LIMIT, abortLimit, 1000);
+    
+        checkPositive(tileFailureRetryCount, GWC_SEED_RETRY_COUNT);
+        checkPositive(tileFailureRetryWaitTime, GWC_SEED_RETRY_WAIT);
+        checkPositive(totalFailuresBeforeAborting, GWC_SEED_ABORT_LIMIT);
+    }
+
+    @SuppressWarnings("serial")
+    private void checkPositive(long value, String variable) {
+        if (value < 0) {
+            throw new BeanInitializationException(
+                    "Invalid configuration value for environment variable " + variable
+                            + ". It should be a positive integer.") {
+            };
+        }
+    }
+
+    private long toLong(String varName, String paramVal, long defaultVal) {
+        if (paramVal == null) {
+            return defaultVal;
+        }
+        try {
+            return Long.valueOf(paramVal);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid environment parameter for " + varName + ": '" + paramVal
+                    + "'. Using default value: " + defaultVal);
+        }
+        return defaultVal;
+    }
+
+    /**
+     * Get the job with the given ID
+     * @param id
+     * @return
+     * @throws JobNotFoundException if the ID is not being used.
+     */
+    public Job getJobByID(long id) throws JobNotFoundException {
+        Job j = jobs.get(id);
+        if (j==null) throw new JobNotFoundException(id);
+        return j;
+    }
 }

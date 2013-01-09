@@ -29,7 +29,7 @@ public class ThreadedSeedJob extends ThreadedJob implements SeedJob  {
    
     
     // Package visible, Jobs should be created by calling the factory method on the TileBreeder
-    ThreadedSeedJob(long id, int threadCount, ThreadedTileBreeder breeder, boolean reseed, TileRangeIterator tri, TileLayer tl,
+    ThreadedSeedJob(long id, int threadCount, TileBreeder breeder, boolean reseed, TileRangeIterator tri, TileLayer tl,
             int tileFailureRetryCount, long tileFailureRetryWaitTime,
             long totalFailuresBeforeAborting, boolean doFilterUpdates) {
         super(id, breeder, tl, threadCount, tri, doFilterUpdates);
@@ -42,7 +42,7 @@ public class ThreadedSeedJob extends ThreadedJob implements SeedJob  {
         threads = new GWCTask[threadCount];
         
         for (int i=0; i<threadCount; i++){
-            threads[i] = breeder.createSeedTask(this);
+            threads[i] = ((ThreadedTileBreeder)breeder).createSeedTask(this);
         }
     }
         

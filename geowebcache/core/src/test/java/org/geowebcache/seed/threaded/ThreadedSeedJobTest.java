@@ -221,7 +221,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
 
     @Override
     protected Job initNextLocation(TileRangeIterator tri) throws Exception {
-        ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
         final SeedTask task = createMockSeedTask(breeder);
         replay(task);
         replay(breeder);
@@ -234,7 +234,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
 
     @Override
     protected Job jobWithTaskStates(STATE... states) throws Exception {
-        ThreadedTileBreeder breeder = createMock(ThreadedTileBreeder.class);
+        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
         for(int i=0; i<states.length; i++){
             final SeedTask task = createMockSeedTask(breeder);
             expect(task.getState()).andStubReturn(states[i]); // Have the task report itself as being in the desired state
