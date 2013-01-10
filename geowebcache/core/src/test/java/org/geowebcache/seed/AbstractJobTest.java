@@ -4,6 +4,9 @@ import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.classextension.EasyMock.*;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.easymock.Capture;
 import org.easymock.IAnswer;
 import org.easymock.IExpectationSetters;
@@ -12,7 +15,8 @@ import org.geowebcache.seed.Job;
 import org.geowebcache.storage.TileRangeIterator;
 import org.junit.Test;
 
-import static junit.framework.Assert.*;
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Tests for common behaviour of classes implementing the Job interface.
@@ -226,6 +230,28 @@ public void testGetStateUnset() throws Exception {
 }
 
 /**
+ * 
+ * @throws Exception
+ */
+@Test
+public void testGetStatus() throws Exception {
+    TileBreeder mockBreeder = createMockTileBreeder();
+    SeedTask task1 = createMockSeedTask(mockBreeder);
+    Collection<TaskStatus> taskStatusCol = new ArrayList<TaskStatus>();
+    taskStatusCol.add(new TaskStatus(0, 0, 0, 0, 0, STATE.RUNNING));
+    expect(task1.getStatus()).andReturn(taskStatusCol.iterator().next());
+    replay(task1);
+    replay(mockBreeder);
+    
+    Job job = createTestSeedJob(mockBreeder, 1);
+    
+    JobStatus status = job.getStatus();
+    assertTrue("JobStatus timestamp is more than 100 ms from expected time.",Math.abs(System.currentTimeMillis()-status.getTime())<100);
+    
+    assertThat(status.getTaskStatuses(), containsInAnyOrder(taskStatusCol.toArray()));
+}
+
+/**
  * Test the terminate method
  * @throws Exception
  */
@@ -275,6 +301,19 @@ public void testTerminateSingle() throws Exception {
         verify(task);
     }
 }
+
+/**
+ * Returns a mock of an appropriate concrete subclass of TileBreeder in the record phase.
+ */
+protected abstract TileBreeder createMockTileBreeder();
+
+/**
+ * 
+ * @param breeder
+ * @param threads
+ * @return
+ */
+protected abstract Job createTestSeedJob(TileBreeder breeder, int threads);
 
 /**
  * Create a mock SeedTask, and expect a call to the breeder's createSeedTask method returning the created task

@@ -15,6 +15,8 @@ import org.geowebcache.seed.TruncateTask;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
+import org.junit.Assume;
+
 import static org.junit.Assert.*;
 
 import static org.easymock.classextension.EasyMock.*;
@@ -113,6 +115,17 @@ public void testSeedStoredTiles() throws Exception {
     job.runSynchronously();
 
     verify(storageBroker);
+}
+
+@Override
+protected TileBreeder createMockTileBreeder() {
+    return createMock(ThreadedTileBreeder.class);
+}
+
+@Override
+protected Job createTestSeedJob(TileBreeder breeder, int threads) {
+    Assume.assumeTrue(false);
+    return null;
 }
 
 

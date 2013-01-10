@@ -355,10 +355,10 @@ public abstract class TileBreeder {
         return new MTSeeder(task);
     }
     
-    public abstract SeedJob createSeedJob(int threadCount, boolean reseed,
+    protected abstract SeedJob createSeedJob(int threadCount, boolean reseed,
             TileRangeIterator trIter, TileLayer tl, boolean filterUpdate);
 
-    public abstract TruncateJob createTruncateJob(TileRangeIterator trIter, TileLayer tl,
+    protected abstract TruncateJob createTruncateJob(TileRangeIterator trIter, TileLayer tl,
             boolean filterUpdate);
 
     protected void setTaskState(GWCTask task, GWCTask.STATE state){

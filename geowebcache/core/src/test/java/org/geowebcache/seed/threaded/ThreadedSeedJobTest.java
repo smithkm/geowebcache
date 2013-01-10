@@ -250,5 +250,19 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         
         return job;
     }
+    
+    @Override
+    protected TileBreeder createMockTileBreeder() {
+        return createMock(ThreadedTileBreeder.class);
+    }
+
+    @Override
+    protected Job createTestSeedJob(TileBreeder breeder, int threads) {
+        TileLayer tl = createMock(TileLayer.class);
+        replay(tl);
+        TileRangeIterator tri = createMock(TileRangeIterator.class);
+        replay(tri);
+        return new ThreadedSeedJob(1,threads, breeder, false, tri, tl, 1,1,4, false);
+    }
 
 }
