@@ -12,7 +12,7 @@ public class TaskStatus {
     final private long tilesTotal;
     final private long timeRemaining;
     final private long taskId;
-    final private GWCTask.STATE status;
+    final private GWCTask.STATE state;
 
     /**
      * 
@@ -21,17 +21,17 @@ public class TaskStatus {
      * @param tilesTotal
      * @param timeRemaining
      * @param taskId
-     * @param status
+     * @param state
      */
     public TaskStatus(long time, long tilesDone, long tilesTotal,
-            long timeRemaining, long taskId, STATE status) {
+            long timeRemaining, long taskId, STATE state) {
         super();
         this.time = time;
         this.tilesDone = tilesDone;
         this.tilesTotal = tilesTotal;
         this.timeRemaining = timeRemaining;
         this.taskId = taskId;
-        this.status = status;
+        this.state = state;
     }
 
     /**
@@ -76,11 +76,11 @@ public class TaskStatus {
     }
 
    /**
-    * The status of the task
+    * The state of the task
     * @return
     */
-    public GWCTask.STATE getStatus() {
-        return status;
+    public GWCTask.STATE getState() {
+        return state;
     }
     
     
