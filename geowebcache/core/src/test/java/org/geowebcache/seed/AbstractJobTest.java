@@ -30,7 +30,7 @@ public abstract class AbstractJobTest {
  * @return
  * @throws Throwable
  */
-protected  IExpectationSetters<Object> expectDoActionInternal(GWCTask mockTask) throws Exception {
+public static IExpectationSetters<Object> expectDoActionInternal(GWCTask mockTask) throws Exception {
     mockTask.doActionInternal();
     return expectLastCall();
 }
@@ -40,7 +40,7 @@ protected  IExpectationSetters<Object> expectDoActionInternal(GWCTask mockTask) 
  * @return
  * @throws Throwable
  */
-protected  IExpectationSetters<Object> expectDispose(GWCTask mockTask) throws Exception {
+public static IExpectationSetters<Object> expectDispose(GWCTask mockTask) throws Exception {
     mockTask.dispose();
     return expectLastCall();
 }
