@@ -21,6 +21,7 @@
 package org.geowebcache.seed;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +102,7 @@ public abstract class TileBreeder {
     
     private StorageBroker storageBroker;
 
-    protected Map<Long, Job> jobs;
+    protected Map<Long, Job> jobs = new HashMap<Long,Job>();
 
     /**
      * How many retries per failed tile. 0 = don't retry, 1 = retry once if failed, etc
