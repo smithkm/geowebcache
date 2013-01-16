@@ -60,4 +60,9 @@ public class DiscontinuousTileRange extends TileRange {
     public boolean contains(long[] idx) {
         return contains(idx[0], idx[1], (int) idx[2]);
     }
+    
+    //TODO: make this class properly serializable
+    private void writeObject(java.io.ObjectOutputStream oos) throws java.io.IOException {
+        throw new java.io.NotSerializableException();
+    }
 }

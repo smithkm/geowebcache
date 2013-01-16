@@ -17,6 +17,7 @@
  */
 package org.geowebcache.storage;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -28,7 +29,7 @@ import org.geowebcache.util.ServletUtils;
  * A 3 dimensional tile range inside a grid set, specified by a range of zooms for fast filtering
  * and a set of (zoom level,xy bounds) specifications
  */
-public class TileRange {
+public class TileRange implements Serializable{
     private final String layerName;
 
     private final String gridSetId;
