@@ -236,7 +236,7 @@ public void testGetStateUnset() throws Exception {
 @Test
 public void testGetStatus() throws Exception {
     TileBreeder mockBreeder = createMockTileBreeder();
-    SeedTask task1 = createMockSeedTask(mockBreeder);
+    SeedTask task1 = SeedTestUtils.createMockSeedTask(mockBreeder);
     Collection<TaskStatus> taskStatusCol = new ArrayList<TaskStatus>();
     taskStatusCol.add(new TaskStatus(0, 0, 0, 0, 0, STATE.RUNNING));
     expect(task1.getStatus()).andReturn(taskStatusCol.iterator().next());
@@ -315,41 +315,5 @@ protected abstract TileBreeder createMockTileBreeder();
  */
 protected abstract Job createTestSeedJob(TileBreeder breeder, int threads);
 
-/**
- * Create a mock SeedTask, and expect a call to the breeder's createSeedTask method returning the created task
- * @param mockBreeder an EasyMock mock of a TileBreeder in its record phase
- * @return a mock SeedTask in its record phase
- */
-protected SeedTask createMockSeedTask(TileBreeder mockBreeder) throws Exception {
-    final SeedTask task = createMock(SeedTask.class);
-    final Capture<SeedJob> jobCap = new Capture<SeedJob>();
-    expect(mockBreeder.createSeedTask(capture(jobCap))).andReturn(task).once();
-    expect(task.getJob()).andStubAnswer(new IAnswer<SeedJob>(){
-        // The task should report that it belongs to the captured job
-        public SeedJob answer() throws Throwable {
-            return jobCap.getValue();
-        }
-
-    });
-    return task;
-}
-/**
- * Create a mock task, and expect a call to the breeder's createTruncateTask method returning the created task
- * @param mockBreeder an EasyMock mock of a TileBreeder in its record phase
- * @return a mock TruncateTask in its record phase
- */
-protected TruncateTask createMockTruncateTask(TileBreeder mockBreeder) throws Exception {
-    final TruncateTask task = createMock(TruncateTask.class);
-    final Capture<TruncateJob> jobCap = new Capture<TruncateJob>();
-    expect(mockBreeder.createTruncateTask(capture(jobCap))).andReturn(task).once();
-    expect(task.getJob()).andStubAnswer(new IAnswer<TruncateJob>(){
-        // The task should report that it belongs to the captured job
-        public TruncateJob answer() throws Throwable {
-            return jobCap.getValue();
-        }
-
-    });
-    return task;
-}
 
 }

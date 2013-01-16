@@ -45,6 +45,7 @@ import org.geowebcache.seed.Job;
 import org.geowebcache.seed.SeedJob;
 import org.geowebcache.seed.SeedRequest;
 import org.geowebcache.seed.SeedTask;
+import org.geowebcache.seed.SeedTestUtils;
 import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.TileBreeder;
 import org.geowebcache.seed.TileRequest;
@@ -222,7 +223,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
     @Override
     protected Job initNextLocation(TileRangeIterator tri) throws Exception {
         TileBreeder breeder = createMock(ThreadedTileBreeder.class);
-        final SeedTask task = createMockSeedTask(breeder);
+        final SeedTask task = SeedTestUtils.createMockSeedTask(breeder);
         replay(task);
         replay(breeder);
         TileLayer tl = createMock(TileLayer.class);
@@ -236,7 +237,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
     protected Job jobWithTaskStates(STATE... states) throws Exception {
         TileBreeder breeder = createMock(ThreadedTileBreeder.class);
         for(int i=0; i<states.length; i++){
-            final SeedTask task = createMockSeedTask(breeder);
+            final SeedTask task = SeedTestUtils.createMockSeedTask(breeder);
             expect(task.getState()).andStubReturn(states[i]); // Have the task report itself as being in the desired state
             replay(task);
         }            
