@@ -290,7 +290,11 @@ public abstract class TileBreeder {
             TileLayerDispatcher tileLayerDispatcher){
         this.layerDispatcher = tileLayerDispatcher;
     }
-    protected TileLayerDispatcher getTileLayerDispatcher(){
+    
+    /**
+     * @return
+     */
+    public TileLayerDispatcher getTileLayerDispatcher(){
         return this.layerDispatcher;
     }
     
