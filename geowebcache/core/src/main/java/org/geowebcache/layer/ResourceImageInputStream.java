@@ -1,10 +1,15 @@
 package org.geowebcache.layer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 
 import javax.imageio.stream.ImageInputStreamImpl;
 
+import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.ByteArrayResource.SeekableInputStream;
+import org.geowebcache.io.Resource;
 
 public class ResourceImageInputStream extends ImageInputStreamImpl {
 
@@ -12,6 +17,18 @@ public class ResourceImageInputStream extends ImageInputStreamImpl {
 
     public ResourceImageInputStream(SeekableInputStream res) throws IOException {
         this.is = res;
+    }
+
+    public ResourceImageInputStream(Resource blob) throws IOException {
+        if (blob instanceof ByteArrayResource) {
+            this.is = ((ByteArrayResource) blob).getInputStream();
+        } else {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            WritableByteChannel channel = Channels.newChannel(out);
+            blob.transferTo(channel);
+            out.flush();
+            this.is = new ByteArrayResource(out.toByteArray()).getInputStream();
+        }
     }
 
     @Override
