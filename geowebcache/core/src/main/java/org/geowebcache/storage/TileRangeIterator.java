@@ -127,6 +127,14 @@ public class TileRangeIterator {
     }
 
     /**
+     * Get the meta tiling factors for this iterator
+     * @return
+     */
+    public int[] getMetaTilingFactors(){
+        return new int[]{metaX, metaY};
+    }
+    
+    /**
      * Calculates the number of tiles covered by the meta tile for this grid location.
      * 
      * @param gridLoc
