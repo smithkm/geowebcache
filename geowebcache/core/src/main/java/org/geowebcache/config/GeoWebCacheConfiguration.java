@@ -71,6 +71,8 @@ public class GeoWebCacheConfiguration {
 
     private List<FormatModifier> formatModifiers;
 
+    private Boolean enableFullWMS;
+
     private List<XMLGridSet> gridSets;
 
     /**
@@ -80,7 +82,7 @@ public class GeoWebCacheConfiguration {
 
     private Boolean enableFullWMS;
 
-   /**
+    /**
      * Default constructor
      */
     public GeoWebCacheConfiguration() {
