@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,6 +43,8 @@ import org.geowebcache.grid.BoundingBox;
 import org.geowebcache.grid.GridSubset;
 import org.geowebcache.grid.OutsideCoverageException;
 import org.geowebcache.grid.SRS;
+import org.geowebcache.io.Resource;
+import org.geowebcache.layer.ResourceImageInputStream;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.layer.wms.WMSLayer;
@@ -323,9 +326,11 @@ public class WMSTileFuser {
                     continue;
                 }
 
-                layer.getTile(tile);
+                tile = layer.getTile(tile);
 
-                BufferedImage tileImg = ImageIO.read(tile.getBlob().getInputStream());
+                Resource blob = tile.getBlob();
+                ImageInputStream imgStream = new ResourceImageInputStream(blob);
+                BufferedImage tileImg = ImageIO.read(imgStream);// read closes the stream for us
 
                 int tilex = 0;
                 int canvasx = (int) (gridx - startx) * gridSubset.getTileWidth();
@@ -355,21 +360,27 @@ public class WMSTileFuser {
 
                 // TODO We should really ensure we can never get here
                 if (tileWidth == 0 || tileHeight == 0) {
-                    log.debug("tileWidth: " + tileWidth + " tileHeight: " + tileHeight);
+                    if (log.isDebugEnabled()) {
+                        log.debug("tileWidth: " + tileWidth + " tileHeight: " + tileHeight);
+                    }
                     continue;
                 }
 
                 // Cut down the tile to the part we want
                 if (tileWidth != gridSubset.getTileWidth()
                         || tileHeight != gridSubset.getTileHeight()) {
-                    log.debug("tileImg.getSubimage(" + tilex + "," + tiley + "," + tileWidth + ","
-                            + tileHeight + ")");
+                    if (log.isDebugEnabled()) {
+                        log.debug("tileImg.getSubimage(" + tilex + "," + tiley + "," + tileWidth
+                                + "," + tileHeight + ")");
+                    }
                     tileImg = tileImg.getSubimage(tilex, tiley, tileWidth, tileHeight);
                 }
 
                 // Render the tile on the big canvas
-                log.debug("drawImage(subtile," + canvasx + "," + canvasy + ",null) "
-                        + Arrays.toString(gridLoc));
+                if (log.isDebugEnabled()) {
+                    log.debug("drawImage(subtile," + canvasx + "," + canvasy + ",null) "
+                            + Arrays.toString(gridLoc));
+                }
                 gfx.drawImage(tileImg, canvasx, canvasy, null); // imageObserver
             }
         }
@@ -387,8 +398,10 @@ public class WMSTileFuser {
             AffineTransform affineTrans = AffineTransform.getScaleInstance(((double) reqWidth)
                     / preTransform.getWidth(), ((double) reqHeight) / preTransform.getHeight());
 
-            log.debug("AffineTransform: " + (((double) reqWidth) / preTransform.getWidth()) + ","
-                    + +(((double) reqHeight) / preTransform.getHeight()));
+            if (log.isDebugEnabled()) {
+                log.debug("AffineTransform: " + (((double) reqWidth) / preTransform.getWidth())
+                        + "," + +(((double) reqHeight) / preTransform.getHeight()));
+            }
 
             gfx.drawRenderedImage(preTransform, affineTrans);
             gfx.dispose();
@@ -417,8 +430,9 @@ public class WMSTileFuser {
             log.debug("IOException writing untiled response to client: " + ioe.getMessage());
         }
 
-        log.debug("WMS response size: " + aos.getCount() + "bytes.");
-
+        if (log.isDebugEnabled()) {
+            log.debug("WMS response size: " + aos.getCount() + "bytes.");
+        }
         stats.log(aos.getCount(), CacheResult.WMS);
     }
 }
