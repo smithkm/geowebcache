@@ -114,6 +114,13 @@ public abstract class GWCTask {
      */
     protected abstract void doActionInternal() throws GeoWebCacheException, InterruptedException;
 
+    /**
+     * Unique id of the task.  
+     * 
+     * This is unique across all Jobs and should not be assumed to be sequential or coupled to the job ID in any way.
+     * 
+     * @return
+     */
     public long getTaskId() {
         return taskId;
     }

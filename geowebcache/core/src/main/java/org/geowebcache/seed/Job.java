@@ -7,6 +7,8 @@ public interface Job {
 
     /**
      * Get the job ID number of this job.
+     * 
+     * This is unique, but may not be sequential or or otherwise meaningful.
      * @return
      */
     public long getId();
