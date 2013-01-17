@@ -62,14 +62,14 @@ public class GeoWebCacheConfiguration {
 
     private List<FormatModifier> formatModifiers;
 
+    private Boolean enableFullWMS;
+
     private List<XMLGridSet> gridSets;
 
     /**
      * The persisted list of layers
      */
     private List<TileLayer> layers;
-
-    private Boolean enableFullWMS;
 
     /**
      * Default constructor
