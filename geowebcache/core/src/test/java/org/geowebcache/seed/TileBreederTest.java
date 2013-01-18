@@ -7,6 +7,7 @@ import static org.easymock.classextension.EasyMock.reset;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import org.easymock.EasyMock;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.seed.GWCTask;
@@ -16,6 +17,7 @@ import org.geowebcache.seed.SeederThreadPoolExecutor;
 import org.geowebcache.seed.threaded.ThreadedTileBreeder;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileRange;
+import org.geowebcache.storage.TileRangeIterator;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -48,9 +50,15 @@ public void testCreateJob() throws Exception {
         expect(tld.getTileLayer("testLayer")).andStubReturn(tl);
     } replay(tld);
     
+    TileRangeIterator tri = createMock(TileRangeIterator.class);
+    
     TileRange tr = createMock(TileRange.class);{
         expect(tr.getLayerName()).andStubReturn("testLayer");
+        expect(tr.iterator(EasyMock.aryEq(new int[]{1,1}))).andStubReturn(tri);
     } replay(tr);
+    
+    expect(tri.getTileRange()).andStubReturn(tr);    
+    replay(tri);
     
     GWCTask.TYPE type = GWCTask.TYPE.SEED;
     

@@ -204,4 +204,8 @@ public class TileRange implements Serializable{
     
         return count;
     }
+    
+    public TileRangeIterator iterator(int[] metaTiling){
+        return new TileRangeIteratorImpl(this, metaTiling);
+    }
 }

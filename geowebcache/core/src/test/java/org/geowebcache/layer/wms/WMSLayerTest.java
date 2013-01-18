@@ -231,7 +231,7 @@ public class WMSLayerTest extends TestCase {
     private void seedTiles(StorageBroker storageBroker, TileRange tr, final WMSLayer tl) throws Exception {
         final String layerName = tl.getName();
         // define the meta tile size to 1,1 so we hit all the tiles
-        final TileRangeIterator trIter = new TileRangeIterator(tr, tl.getMetaTilingFactors());
+        final TileRangeIterator trIter = tr.iterator(tl.getMetaTilingFactors());
 
         long[] gridLoc = trIter.nextMetaGridLocation();
 
@@ -251,7 +251,7 @@ public class WMSLayerTest extends TestCase {
     private List<ConveyorTile> getTiles(StorageBroker storageBroker, TileRange tr, final WMSLayer tl) throws Exception {
         final String layerName = tl.getName();
         // define the meta tile size to 1,1 so we hit all the tiles
-        final TileRangeIterator trIter = new TileRangeIterator(tr, new int[]{1, 1});
+        final TileRangeIterator trIter = tr.iterator(new int[]{1, 1});
 
         long[] gridLoc = trIter.nextMetaGridLocation();
 

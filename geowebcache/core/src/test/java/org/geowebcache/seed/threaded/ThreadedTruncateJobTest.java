@@ -97,7 +97,7 @@ public void testSeedStoredTiles() throws Exception {
     storageBroker = createMock(StorageBroker.class);
     
     TileRange tr = ThreadedTileBreeder.createTileRange(req, tl);
-    TileRangeIterator trIter = new TileRangeIterator(tr, tl.getMetaTilingFactors());
+    TileRangeIterator trIter = tr.iterator(tl.getMetaTilingFactors());
 
     
     final TileBreeder breeder = createMock(ThreadedTileBreeder.class);

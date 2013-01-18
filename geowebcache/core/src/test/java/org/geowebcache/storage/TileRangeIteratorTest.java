@@ -197,7 +197,7 @@ public class TileRangeIteratorTest extends TestCase {
                     rasterMask, mimeType, parameters);
         }
 
-        final TileRangeIterator tri = new TileRangeIterator(tileRange, metaTilingFactors);
+        final TileRangeIterator tri = new TileRangeIteratorImpl(tileRange, metaTilingFactors);
 
         Collection<Callable<Long>> tasks = new ArrayList<Callable<Long>>(nThreads);
         for (int taskN = 0; taskN < nThreads; taskN++) {

@@ -413,7 +413,7 @@ public abstract class TileBreeder {
                     log.trace("Forcing thread count to 1");
                     threadCount = 1;
                 }
-                TileRangeIterator trIter = new TileRangeIterator(tr, tl.getMetaTilingFactors());
+                TileRangeIterator trIter = tr.iterator(tl.getMetaTilingFactors());
                 Job job;
                 switch (type) {
                 case TRUNCATE:
