@@ -23,6 +23,9 @@ public class ThreadedTruncateJob extends ThreadedJob implements TruncateJob {
     }
     
     
+    public GWCTask.TYPE getType(){
+        return GWCTask.TYPE.TRUNCATE;
+    }
 
 
 }

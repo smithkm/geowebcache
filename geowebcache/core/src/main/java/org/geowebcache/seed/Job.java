@@ -83,4 +83,10 @@ public interface Job {
      * @return
      */
     public GWCTask.STATE getState();
+    
+    /**
+     * Get the type of the job.  All its tasks will also have this type.
+     * @return
+     */
+    public GWCTask.TYPE getType();
 }

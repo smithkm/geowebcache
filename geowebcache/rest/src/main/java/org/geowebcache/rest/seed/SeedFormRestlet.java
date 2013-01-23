@@ -19,6 +19,7 @@ package org.geowebcache.rest.seed;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.NumberFormat;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -44,6 +45,8 @@ import org.geowebcache.rest.RestletException;
 import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.GWCTask.TYPE;
+import org.geowebcache.seed.JobStatus;
+import org.geowebcache.seed.TaskStatus;
 import org.geowebcache.seed.threaded.ThreadedTileBreeder;
 import org.geowebcache.seed.Job;
 import org.geowebcache.seed.SeedRequest;
@@ -466,70 +469,77 @@ public class SeedFormRestlet extends GWCRestlet {
 
         doc.append("<h4>List of currently executing tasks:</h4>\n");
 
-        Iterator<GWCTask> iter = seeder.getRunningAndPendingTasks();
+        Collection<JobStatus> jobs = seeder.getJobStatusList();
 
         boolean tasks = false;
-        if (!iter.hasNext()) {
+        if (jobs.isEmpty()) {
             doc.append("<ul><li><i>none</i></li></ul>\n");
         } else {
             doc.append("<table border=\"0\">");
-            doc.append("<tr style=\"font-weight: bold;\"><td style=\"padding-right:20px;\">Id</td><td style=\"padding-right:20px;\">Layer</td><td style=\"padding-right:20px;\">Status</td><td style=\"padding-right:20px;\">Type</td><td>Estimated # of tiles</td>"
-                    + "<td style=\"padding-right:20px;\">Tiles completed</td><td style=\"padding-right:20px;\">Time elapsed</td><td>Time remaining</td><td>Tasks</td><td>&nbsp;</td>");
-            doc.append("</tr>");
+            doc.append("<thead><tr><th style=\"padding-right:20px;\">Id</th><th style=\"padding-right:20px;\">Layer</th><th style=\"padding-right:20px;\">Status</th><th style=\"padding-right:20px;\">Type</th><th>Estimated # of tiles</th>"
+                    + "<th style=\"padding-right:20px;\">Tiles completed</th><th style=\"padding-right:20px;\">Time elapsed</th><th>Time remaining</th><th>Tasks</th><th>&nbsp;</th>");
+            doc.append("</tr></thead>");
             tasks = true;
         }
 
         int row = 0;
 
         final String layerName = tl.getName();
-        while (iter.hasNext()) {
-            GWCTask task = iter.next();
-            if (!listAll && !layerName.equals(task.getLayerName())) {
+        for(JobStatus job: jobs) {
+            if (!listAll && !layerName.equals(job.getLayerName())) {
                 continue;
             }
-            final long spent = task.getTimeSpent();
-            final long remining = task.getTimeRemaining();
-            final long tilesDone = task.getTilesDone();
-            final long tilesTotal = task.getTilesTotal();
-
-            NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
-            nf.setGroupingUsed(true);
-            final String tilesTotalStr;
-            if (tilesTotal < 0) {
-                tilesTotalStr = "Too many to count";
-            } else {
-                tilesTotalStr = nf.format(tilesTotal);
+            doc.append("<tbody>");
+            doc.append("<tr class\"job\">");
+            doc.append("<th style=\"padding-right:20px;\" colspan=\"*\">Job ").append(job.getJobId()).append("</th>");
+            doc.append("</tr>");
+            for (TaskStatus task: job.getTaskStatuses()){
+    
+                final long spent = task.getTimeSpent();
+                final long remining = task.getTimeRemaining();
+                final long tilesDone = task.getTilesDone();
+                final long tilesTotal = task.getTilesTotal();
+    
+                NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
+                nf.setGroupingUsed(true);
+                final String tilesTotalStr;
+                if (tilesTotal < 0) {
+                    tilesTotalStr = "Too many to count";
+                } else {
+                    tilesTotalStr = nf.format(tilesTotal);
+                }
+                final String tilesDoneStr = nf.format(task.getTilesDone());
+                final STATE state = task.getState();
+    
+                final String status = STATE.UNSET.equals(state) || STATE.READY.equals(state) ? "PENDING"
+                        : state.toString();
+    
+                String timeSpent = toTimeString(spent, tilesDone, tilesTotal);
+                String timeRemaining = toTimeString(remining, tilesDone, tilesTotal);
+    
+                String bgColor = ++row % 2 == 0 ? "#FFFFFF" : "#DDDDDD";
+                doc.append("<tr style=\"background-color:" + bgColor + ";\">");
+                doc.append("<td style=\"text-align:right\">").append(task.getTaskId()).append("</td>");
+                doc.append("<td>");
+                if (!layerName.equals(job.getLayerName())) {
+                    doc.append("<a href=\"./").append(job.getLayerName()).append("\">");
+                }
+                doc.append(job.getLayerName());
+                if (!layerName.equals(job.getLayerName())) {
+                    doc.append("</a>");
+                }
+                doc.append("</td>");
+                doc.append("<td>").append(status).append("</td>");
+                doc.append("<td>").append(job.getType()).append("</td>");
+                doc.append("<td>").append(tilesTotalStr).append("</td>");
+                doc.append("<td>").append(tilesDoneStr).append("</td>");
+                doc.append("<td>").append(timeSpent).append("</td>");
+                doc.append("<td>").append(timeRemaining).append("</td>");
+                doc.append("<td>").append(job.getThreadCount()).append("</td>");
+                doc.append("<td>").append(makeThreadKillForm(task.getTaskId(), tl)).append("</td>");
+                doc.append("<tr>");
             }
-            final String tilesDoneStr = nf.format(task.getTilesDone());
-            final STATE state = task.getState();
-
-            final String status = STATE.UNSET.equals(state) || STATE.READY.equals(state) ? "PENDING"
-                    : state.toString();
-
-            String timeSpent = toTimeString(spent, tilesDone, tilesTotal);
-            String timeRemaining = toTimeString(remining, tilesDone, tilesTotal);
-
-            String bgColor = ++row % 2 == 0 ? "#FFFFFF" : "#DDDDDD";
-            doc.append("<tr style=\"background-color:" + bgColor + ";\">");
-            doc.append("<td style=\"text-align:right\">").append(task.getTaskId()).append("</td>");
-            doc.append("<td>");
-            if (!layerName.equals(task.getLayerName())) {
-                doc.append("<a href=\"./").append(task.getLayerName()).append("\">");
-            }
-            doc.append(task.getLayerName());
-            if (!layerName.equals(task.getLayerName())) {
-                doc.append("</a>");
-            }
-            doc.append("</td>");
-            doc.append("<td>").append(status).append("</td>");
-            doc.append("<td>").append(task.getType()).append("</td>");
-            doc.append("<td>").append(tilesTotalStr).append("</td>");
-            doc.append("<td>").append(tilesDoneStr).append("</td>");
-            doc.append("<td>").append(timeSpent).append("</td>");
-            doc.append("<td>").append(timeRemaining).append("</td>");
-            doc.append("<td>").append(task.getJob().getThreadCount()).append("</td>");
-            doc.append("<td>").append(makeThreadKillForm(task.getTaskId(), tl)).append("</td>");
-            doc.append("<tr>");
+            doc.append("</tbody>");
         }
 
         if (tasks) {

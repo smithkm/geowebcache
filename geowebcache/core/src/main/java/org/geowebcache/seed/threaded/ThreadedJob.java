@@ -226,7 +226,7 @@ abstract class ThreadedJob implements Job {
         for(GWCTask task: threads) {
             taskStatuses.add(task.getStatus());
         }
-        return new JobStatus(taskStatuses, System.currentTimeMillis(), this.id);
+        return new JobStatus(taskStatuses, System.currentTimeMillis(), this.id, this.getThreadCount(), this.getLayer().getName(),this.getType() );
     }
     
     /**

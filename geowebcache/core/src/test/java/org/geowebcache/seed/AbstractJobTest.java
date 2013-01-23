@@ -238,7 +238,7 @@ public void testGetStatus() throws Exception {
     TileBreeder mockBreeder = createMockTileBreeder();
     SeedTask task1 = SeedTestUtils.createMockSeedTask(mockBreeder);
     Collection<TaskStatus> taskStatusCol = new ArrayList<TaskStatus>();
-    taskStatusCol.add(new TaskStatus(0, 0, 0, 0, 0, STATE.RUNNING));
+    taskStatusCol.add(new TaskStatus(0, 0, 0, 0, 0, 0, STATE.RUNNING));
     expect(task1.getStatus()).andReturn(taskStatusCol.iterator().next());
     replay(task1);
     replay(mockBreeder);

@@ -226,6 +226,7 @@ public abstract class GWCTask {
                 getTilesDone(),
                 getTilesTotal(),
                 getTimeRemaining(),
+                getTimeSpent(),
                 getTaskId(),
                 getState()
                 );

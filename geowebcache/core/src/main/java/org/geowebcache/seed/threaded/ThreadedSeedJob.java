@@ -164,4 +164,7 @@ public class ThreadedSeedJob extends ThreadedJob implements SeedJob  {
         return this.reseed;
     }
 
+    public GWCTask.TYPE getType(){
+        return this.reseed ? GWCTask.TYPE.RESEED : GWCTask.TYPE.SEED;
+    }
 }

@@ -11,6 +11,7 @@ public class TaskStatus {
     final private long tilesDone;
     final private long tilesTotal;
     final private long timeRemaining;
+    final private long timeSpent;
     final private long taskId;
     final private GWCTask.STATE state;
 
@@ -24,12 +25,13 @@ public class TaskStatus {
      * @param state
      */
     public TaskStatus(long time, long tilesDone, long tilesTotal,
-            long timeRemaining, long taskId, STATE state) {
+            long timeRemaining, long timeSpent, long taskId, STATE state) {
         super();
         this.time = time;
         this.tilesDone = tilesDone;
         this.tilesTotal = tilesTotal;
         this.timeRemaining = timeRemaining;
+        this.timeSpent = timeSpent;
         this.taskId = taskId;
         this.state = state;
     }
@@ -59,11 +61,19 @@ public class TaskStatus {
     }
 
     /**
-     * The number of tiles remaining for the task
+     * The time remaining for the task
      * @return
      */
-    public long getTilesRemaining() {
+    public long getTimeRemaining() {
         return timeRemaining;
+    }
+    
+    /**
+     * The time taken so far for the task
+     * @return
+     */
+    public long getTimeSpent() {
+        return timeSpent;
     }
 
 

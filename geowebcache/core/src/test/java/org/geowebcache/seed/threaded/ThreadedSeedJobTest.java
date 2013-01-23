@@ -260,6 +260,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
     @Override
     protected Job createTestSeedJob(TileBreeder breeder, int threads) {
         TileLayer tl = createMock(TileLayer.class);
+        expect(tl.getName()).andStubReturn("testLayer");
         replay(tl);
         TileRangeIterator tri = createMock(TileRangeIterator.class);
         replay(tri);
