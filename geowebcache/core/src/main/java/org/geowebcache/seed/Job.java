@@ -27,7 +27,7 @@ public interface Job {
      * Get the worker tasks for this job.
      * @return
      */
-    public GWCTask[] getTasks();
+    //public GWCTask[] getTasks();
     
     /**
      * Stop this job

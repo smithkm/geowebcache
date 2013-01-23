@@ -72,7 +72,7 @@ public void testCreateJob() throws Exception {
     
     assertThat(j.getRange(), equalTo(tr));
     assertThat(j.getState(), equalTo(GWCTask.STATE.READY));
-    assertThat(j.getTasks(), Matchers.arrayWithSize(1));
+    assertThat(j.getTaskStatus(), Matchers.hasSize(1));
     assertThat(j.isReseed(), equalTo(false));
 }
 

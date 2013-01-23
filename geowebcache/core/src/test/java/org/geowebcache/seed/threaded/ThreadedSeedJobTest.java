@@ -101,12 +101,16 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         expect(tri.nextMetaGridLocation()).andReturn(null).anyTimes();
         replay(tri);
         
-        SeedJob job = (SeedJob) initNextLocation(tri);
         
+        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
+        final SeedTask task = SeedTestUtils.createMockSeedTask(breeder);
+        replay(task);
+        replay(breeder);
+        TileLayer tl = createMock(TileLayer.class);
+        replay(tl);
+        ThreadedSeedJob job = new ThreadedSeedJob(1,1, breeder, false, tri, tl, 3,750,5, false);
+
         TileRequest tr;
-        
-        GWCTask task = job.getTasks()[0];
-        
         tr = job.getNextLocation();
         assertTileRequestAt(tr, new long[] {1,2,3});
         assertEquals(0, tr.getFailures());
@@ -166,9 +170,13 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         expect(tri.nextMetaGridLocation()).andReturn(null).anyTimes();
         replay(tri);
         
-        SeedJob job = (SeedJob) initNextLocation(tri);
-        
-        GWCTask task = job.getTasks()[0];
+        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
+        final SeedTask task = SeedTestUtils.createMockSeedTask(breeder);
+        replay(task);
+        replay(breeder);
+        TileLayer tl = createMock(TileLayer.class);
+        replay(tl);
+        ThreadedSeedJob job = new ThreadedSeedJob(1,1, breeder, false, tri, tl, 3,750,5, false);
 
         reset(task); {
             expect(task.getJob()).andStubReturn(job);
@@ -179,6 +187,7 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         
         TileRequest tr;
         
+        job.threadStarted(task);
         
         tr = job.getNextLocation();
         assertTileRequestAt(tr, new long[] {1,2,3});
@@ -234,31 +243,12 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
     }
 
     @Override
-    protected Job jobWithTaskStates(STATE... states) throws Exception {
-        TileBreeder breeder = createMock(ThreadedTileBreeder.class);
-        for(int i=0; i<states.length; i++){
-            final SeedTask task = SeedTestUtils.createMockSeedTask(breeder);
-            expect(task.getState()).andStubReturn(states[i]); // Have the task report itself as being in the desired state
-            replay(task);
-        }            
-        replay(breeder);
-        TileLayer tl = createMock(TileLayer.class);
-        replay(tl);
-        TileRangeIterator tri = createMock(TileRangeIterator.class);
-        replay(tri);
-        
-        ThreadedSeedJob job = new ThreadedSeedJob(1,states.length, breeder, false, tri, tl, 1,1,4, false);
-        
-        return job;
-    }
-    
-    @Override
     protected TileBreeder createMockTileBreeder() {
         return createMock(ThreadedTileBreeder.class);
     }
 
     @Override
-    protected Job createTestSeedJob(TileBreeder breeder, int threads) {
+    protected Job createTestJob(TileBreeder breeder, int threads) {
         TileLayer tl = createMock(TileLayer.class);
         expect(tl.getName()).andStubReturn("testLayer");
         replay(tl);
@@ -269,6 +259,12 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         expect(tri.getTileRange()).andStubReturn(tr);
         replay(tri);
         return new ThreadedSeedJob(1,threads, breeder, false, tri, tl, 1,1,4, false);
+    }
+
+
+    @Override
+    protected GWCTask createMockTask(TileBreeder mockBreeder) throws Exception{
+        return SeedTestUtils.createMockSeedTask(mockBreeder);
     }
 
 }

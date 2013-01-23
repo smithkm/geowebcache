@@ -147,7 +147,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         Assert.isTrue(job.getBreeder()==this, "Job was not created by this breeder.");
         lock.writeLock().lock();
         try {
-            GWCTask[] tasks = job.getTasks();
+            GWCTask[] tasks = ((ThreadedJob)job).getTasks();
             for (int i = 0; i < tasks.length; i++) {
                 final Long taskId = this.currentTaskId.incrementAndGet();
                 final GWCTask task = tasks[i];

@@ -6,6 +6,7 @@ import org.geowebcache.grid.GridSubset;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.wms.WMSLayer;
 import org.geowebcache.seed.AbstractJobTest;
+import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.Job;
@@ -20,6 +21,7 @@ import org.junit.Assume;
 
 import static org.junit.Assert.*;
 
+import static org.easymock.EasyMock.expect;
 import static org.easymock.classextension.EasyMock.*;
 import static org.geowebcache.TestHelpers.createRequest;
 
@@ -40,26 +42,6 @@ protected Job initNextLocation(TileRangeIterator tri) throws Exception {
     job.threads[0] = task;
 
     return job;
-}
-
-@Override
-protected Job jobWithTaskStates(STATE... states) throws Exception {
-    assertEquals(1, states.length);
-    final TileBreeder breeder = createMock(ThreadedTileBreeder.class);
-    final TruncateTask task = SeedTestUtils.createMockTruncateTask(breeder);
-    expect(task.getState()).andReturn(states[0]).anyTimes();
-    replay(task);
-    replay(breeder);
-    
-    TileLayer tl = createMock(TileLayer.class);
-    replay(tl);
-    TileRangeIterator tri = createMock(TileRangeIterator.class);
-    replay(tri);
-    
-    ThreadedTruncateJob job = new ThreadedTruncateJob(1, breeder, tri, tl, false);
-    
-    return job;
-
 }
 
 @Override
@@ -124,9 +106,23 @@ protected TileBreeder createMockTileBreeder() {
 }
 
 @Override
-protected Job createTestSeedJob(TileBreeder breeder, int threads) {
-    Assume.assumeTrue(false);
-    return null;
+protected Job createTestJob(TileBreeder breeder, int threads) {
+    Assume.assumeTrue(threads==1);
+    TileLayer tl = createMock(TileLayer.class);
+    expect(tl.getName()).andStubReturn("testLayer");
+    replay(tl);
+    TileRange tr = createMock(TileRange.class);
+    expect(tr.tileCount()).andStubReturn(10l);
+    replay(tr);
+    TileRangeIterator tri = createMock(TileRangeIterator.class);
+    expect(tri.getTileRange()).andStubReturn(tr);
+    replay(tri);
+    return new ThreadedTruncateJob(threads, breeder, tri, tl, false);
+}
+
+@Override
+protected GWCTask createMockTask(TileBreeder mockBreeder) throws Exception {
+    return SeedTestUtils.createMockTruncateTask(mockBreeder);
 }
 
 

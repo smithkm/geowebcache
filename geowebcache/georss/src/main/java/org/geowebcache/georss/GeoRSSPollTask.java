@@ -86,7 +86,7 @@ class GeoRSSPollTask implements Runnable {
 
     private final TileBreeder seeder;
 
-    private LinkedList<GWCTask> seedTasks = new LinkedList<GWCTask>();
+    private LinkedList<Job> seedJobs = new LinkedList<Job>();
 
     public GeoRSSPollTask(final PollDef poll, final TileBreeder seeder) {
         this.poll = poll;
@@ -305,29 +305,26 @@ class GeoRSSPollTask implements Runnable {
             }
             seeder.dispatchJob(job);
 
-            // Save the handles so we can stop them
-            // TODO store handles for Jobs instead.
-            for (GWCTask task : job.getTasks()) {
-                seedTasks.add(task);
-            }
+            // Save the handle so we can stop it
+            seedJobs.add(job);
 
         }
     }
 
     protected void stopSeeding(boolean checkLiveCount) {
-        if (this.seedTasks != null) {
+        if (this.seedJobs != null) {
             int liveCount = 0;
-            for (GWCTask task : seedTasks) {
-                if (task.getState() != STATE.DEAD && task.getState() != STATE.DONE) {
-                    task.terminateNicely();
+            for (Job job : seedJobs) {
+                if (!job.getState().isStopped()) {
+                    job.terminate();
                     liveCount++;
                 }
             }
 
             Thread.yield();
 
-            for (GWCTask task : seedTasks) {
-                if (task.getState() != STATE.DEAD && task.getState() != STATE.DONE) {
+            for (Job job : seedJobs) {
+                if (!job.getState().isStopped()) {
                     liveCount++;
                 }
             }
@@ -338,17 +335,17 @@ class GeoRSSPollTask implements Runnable {
 
             try {
                 logger.debug("Found " + liveCount
-                        + " running seed threads. Waiting 3s for them to terminate.");
+                        + " running seed jobs. Waiting 3s for them to terminate.");
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
             liveCount = 0;
-            Iterator<GWCTask> iter = seedTasks.iterator();
+            Iterator<Job> iter = seedJobs.iterator();
             while (iter.hasNext()) {
-                GWCTask task = iter.next();
-                if (task.getState() != STATE.DEAD && task.getState() != STATE.DONE) {
+                Job job = iter.next();
+                if (!job.getState().isStopped()) {
                     liveCount++;
                 } else {
                     iter.remove();

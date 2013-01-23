@@ -88,12 +88,20 @@ public void testGetNextRequest() throws Exception {
     assertNull(tr);
 }
 
-/**
- * Return a Job with EasyMock GWCTasks that report the given states when their getState methods are called.
- * @param states
- * @return
- */
-protected abstract Job jobWithTaskStates(STATE... states) throws Exception;
+protected void taskForState(GWCTask task, STATE state) {
+    expect(task.getState()).andStubReturn(state);
+}
+
+protected GWCTask[] tasksForStates(TileBreeder breeder, boolean replay, STATE... states) throws Exception{
+    ArrayList<GWCTask>tasks = new ArrayList<GWCTask>(states.length);
+    for(STATE state: states){
+        GWCTask task = createMockTask(breeder);
+        taskForState(task, state);
+        tasks.add(task);
+        if(replay) replay(task);
+    }
+    return tasks.toArray(new GWCTask[1]);
+}
 
 /**
  * Assert that a job with tasks in the given states has the expected state.
@@ -101,7 +109,10 @@ protected abstract Job jobWithTaskStates(STATE... states) throws Exception;
  * @param states The states of the tasks in the job
  */
 protected void assertGetState(STATE expected, STATE... states) throws Exception{
-    Job job = jobWithTaskStates(states);
+    TileBreeder breeder = createMockTileBreeder();
+    tasksForStates(breeder, true, states);
+    replay(breeder);
+    Job job = createTestJob(breeder, states.length);
     assertEquals(expected, job.getState());
 }
 
@@ -236,14 +247,14 @@ public void testGetStateUnset() throws Exception {
 @Test
 public void testGetStatus() throws Exception {
     TileBreeder mockBreeder = createMockTileBreeder();
-    SeedTask task1 = SeedTestUtils.createMockSeedTask(mockBreeder);
+    GWCTask task1 = createMockTask(mockBreeder);
     Collection<TaskStatus> taskStatusCol = new ArrayList<TaskStatus>();
     taskStatusCol.add(createMock(TaskStatus.class));
     expect(task1.getStatus()).andReturn(taskStatusCol.iterator().next());
     replay(task1);
     replay(mockBreeder);
     
-    Job job = createTestSeedJob(mockBreeder, 1);
+    Job job = createTestJob(mockBreeder, 1);
     
     JobStatus status = job.getStatus();
     assertTrue("JobStatus timestamp is more than 100 ms from expected time.",Math.abs(System.currentTimeMillis()-status.getTime())<100);
@@ -257,23 +268,28 @@ public void testGetStatus() throws Exception {
  */
 @Test
 public void testTerminate() throws Exception {
-    Job job = jobWithTaskStates(STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY);
+    TileBreeder breeder = createMockTileBreeder();
+    STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY};
+    GWCTask[] tasks = new GWCTask[states.length]; 
     
-    for(GWCTask task: job.getTasks()){
-        STATE s = task.getState();
-        reset(task);
-        
-        expect(task.getState()).andReturn(s).anyTimes();
+    for(int i =0;i<states.length;i++){
+        STATE s = states[i];
+        GWCTask task = createMockTask(breeder);
+        taskForState(task, s);
         if(s != STATE.DEAD && s != STATE.DONE){
             task.terminateNicely();
             expectLastCall().once();
         }
         replay(task);
+        tasks[i]=task;
     }
+    replay(breeder);
+    Job job = createTestJob(breeder, 5);
+
     
     job.terminate();
     
-    for(GWCTask task: job.getTasks()){
+    for(GWCTask task: tasks){
         verify(task);
     }
 }
@@ -287,16 +303,17 @@ public void testTerminateSingle() throws Exception {
     STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY};
     
     for(STATE s: states){
-        Job job = jobWithTaskStates(s);
-        GWCTask task = job.getTasks()[0];
-        reset(task);
-        
-        expect(task.getState()).andReturn(s).anyTimes();
+        TileBreeder breeder = createMockTileBreeder();
+        GWCTask task = createMockTask(breeder);
+        taskForState(task, s);
         if(s != STATE.DEAD && s != STATE.DONE){
             task.terminateNicely();
             expectLastCall().once();
         }
         replay(task);
+        replay(breeder);
+        Job job = createTestJob(breeder, 1);
+        
         job.terminate();
         verify(task);
     }
@@ -313,7 +330,16 @@ protected abstract TileBreeder createMockTileBreeder();
  * @param threads
  * @return
  */
-protected abstract Job createTestSeedJob(TileBreeder breeder, int threads);
+protected abstract Job createTestJob(TileBreeder breeder, int threads);
 
+/**
+ * Returns a mock GWCTask of the appropriate subtype for the Job being tested.
+ * 
+ * Use SeedTestUtils#createMockSeedTask or SeedTestUtils#createMockTruncateTask
+ * @param mockBreeder
+ * @return
+ * @throws Exception 
+ */
+protected abstract GWCTask createMockTask(TileBreeder mockBreeder) throws Exception;
 
 }

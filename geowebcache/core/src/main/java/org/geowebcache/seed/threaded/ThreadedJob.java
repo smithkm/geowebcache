@@ -71,8 +71,16 @@ abstract class ThreadedJob implements Job {
         this.tri = tri;
         this.tl = tl;
         this.doFilterUpdate = doFilterUpdate;
+        
+        createThreads();
+        Assert.state(threads!=null);
+        for(GWCTask thread: threads){
+            Assert.state(thread!=null);
+        }
     }
 
+    protected abstract void createThreads();
+    
     protected GWCTask[] threads;
 
     public TileBreeder getBreeder() {
@@ -83,7 +91,10 @@ abstract class ThreadedJob implements Job {
         return id;
     }
 
-    public GWCTask[] getTasks() {
+    GWCTask[] getTasks() {
+        for(GWCTask task: threads){
+            Assert.state(task!=null);
+        }
         return threads;
     }
 
@@ -115,8 +126,6 @@ abstract class ThreadedJob implements Job {
 
     public void threadStopped(GWCTask thread) {
         myTask(thread);
-        
-        activeThreads.decrementAndGet();
         
         long membersRemaining = activeThreads.decrementAndGet();
         if (0 == membersRemaining) {

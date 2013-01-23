@@ -38,7 +38,10 @@ public class ThreadedSeedJob extends ThreadedJob implements SeedJob  {
         this.tileFailureRetryCount = tileFailureRetryCount;
         this.tileFailureRetryWaitTime = tileFailureRetryWaitTime;
         this.totalFailuresBeforeAborting = totalFailuresBeforeAborting;
-        
+    }
+    
+    @Override
+    protected void createThreads(){
         threads = new GWCTask[threadCount];
         
         for (int i=0; i<threadCount; i++){

@@ -208,6 +208,7 @@ public abstract class GWCTask {
      * @return
      */
     public STATE getState() {
+        Assert.state(state!=null);
         return state;
     }
 
