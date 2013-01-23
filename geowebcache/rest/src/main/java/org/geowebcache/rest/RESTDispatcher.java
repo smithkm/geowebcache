@@ -82,6 +82,7 @@ public class RESTDispatcher extends AbstractController {
             myConverter.service(req, resp);
         }
         catch( Exception e ) {
+            if(log.isErrorEnabled()) log.error("Exception while processing REST request", e);
             RestletException re = null;
             if ( e instanceof RestletException ) {
                 re = (RestletException) e;
