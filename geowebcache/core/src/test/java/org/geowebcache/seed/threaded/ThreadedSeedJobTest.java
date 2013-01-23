@@ -262,7 +262,11 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         TileLayer tl = createMock(TileLayer.class);
         expect(tl.getName()).andStubReturn("testLayer");
         replay(tl);
+        TileRange tr = createMock(TileRange.class);
+        expect(tr.tileCount()).andStubReturn(10l);
+        replay(tr);
         TileRangeIterator tri = createMock(TileRangeIterator.class);
+        expect(tri.getTileRange()).andStubReturn(tr);
         replay(tri);
         return new ThreadedSeedJob(1,threads, breeder, false, tri, tl, 1,1,4, false);
     }

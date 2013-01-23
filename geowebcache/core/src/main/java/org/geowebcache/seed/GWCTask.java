@@ -31,9 +31,8 @@ public abstract class GWCTask {
     /**
      * An unknown duration
      */
-    static final long TIME_UNKNOWN = -2;
+    public static final long TIME_UNKNOWN = -2;
 
-    @SuppressWarnings("unused")
     private static final Log log = LogFactory.getLog(GWCTask.class);
 
     public static enum TYPE {
@@ -41,7 +40,20 @@ public abstract class GWCTask {
     };
 
     public static enum STATE {
-        UNSET, READY, RUNNING, DONE, DEAD
+        UNSET(false), READY(false), RUNNING(false), DONE(true), DEAD(true);
+        
+        /**
+         * A state where the task is no longer running or able to run
+         */
+        public boolean isStopped(){
+            return stopped;
+        }
+        
+        private final boolean stopped;
+        
+        STATE(boolean stopped) {
+            this.stopped=stopped;
+        }
     };
 
     //protected int threadOffset = 0;
@@ -88,13 +100,15 @@ public abstract class GWCTask {
      */
     public final void doAction() throws GeoWebCacheException, InterruptedException {
         Assert.state(getState()==STATE.READY, "Task can not be started as it is "+state+" rather than READY");
+        if(log.isTraceEnabled()) log.trace(parsedType+" Task "+taskId+" starting.");
         state=STATE.RUNNING;
         getJob().threadStarted(this);
         try {
             doActionInternal();
         } finally {
-            // If it's not DONE, it's DEAD at this point.
-            if(getState()!=STATE.DONE && getState()!=STATE.DEAD){
+            if(log.isTraceEnabled()) log.trace("Task "+taskId+" ending.");
+            // If it's not DONE, it should be DEAD at this point.
+            if(!getState().isStopped()){
                 log.info("Task "+Long.toString(taskId)+"reached end but was still in state "+getState()+".  Setting to DEAD.");
                 state=STATE.DEAD;
             }
@@ -211,7 +225,7 @@ public abstract class GWCTask {
 
     @Override
     public String toString() {
-        return new StringBuilder("[").append(getTaskId()).append(": ").append(getLayerName())
+        return new StringBuilder("[Task").append(getTaskId()).append(": ").append(getLayerName())
                 .append(", ").append(getType()).append(", ").append(getState()).append("]")
                 .toString();
     }
@@ -221,14 +235,6 @@ public abstract class GWCTask {
      * @return
      */
     public TaskStatus getStatus(){
-       return new TaskStatus(
-                System.currentTimeMillis(),
-                getTilesDone(),
-                getTilesTotal(),
-                getTimeRemaining(),
-                getTimeSpent(),
-                getTaskId(),
-                getState()
-                );
+       return new TaskStatus(this);
     }
 }

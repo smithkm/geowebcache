@@ -106,8 +106,10 @@ abstract class ThreadedJob implements Job {
         myTask(thread);
         
         activeThreads.incrementAndGet();
-        if(this.groupStartTime==TIME_NOT_STARTED){
-            this.groupStartTime=System.currentTimeMillis();
+        synchronized(this) {
+            if(this.groupStartTime==TIME_NOT_STARTED){
+                this.groupStartTime=System.currentTimeMillis();
+            }
         }
     }
 
@@ -119,6 +121,8 @@ abstract class ThreadedJob implements Job {
         long membersRemaining = activeThreads.decrementAndGet();
         if (0 == membersRemaining) {
             finished();
+        } else if (membersRemaining<0) {
+            throw new IllegalStateException("A job can not have fewer than 0 active threads.");
         }
     }
     
@@ -218,15 +222,19 @@ abstract class ThreadedJob implements Job {
         
     }
 
-    /**
-     * Returns the current status of the job.  Does not do any locking.
-     */
-    public JobStatus getStatus() {
+    public Collection<TaskStatus> getTaskStatus(){
         Collection<TaskStatus> taskStatuses = new ArrayList<TaskStatus>(threads.length);
         for(GWCTask task: threads) {
             taskStatuses.add(task.getStatus());
         }
-        return new JobStatus(taskStatuses, System.currentTimeMillis(), this.id, this.getThreadCount(), this.getLayer().getName(),this.getType() );
+        return taskStatuses;
+    }
+    
+    /**
+     * Returns the current status of the job.  Does not do any locking.
+     */
+    public JobStatus getStatus() {
+        return new JobStatus(this);
     }
     
     /**

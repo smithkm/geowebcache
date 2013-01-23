@@ -1,5 +1,7 @@
 package org.geowebcache.seed;
 
+import java.util.Collection;
+
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.storage.TileRange;
 
@@ -77,6 +79,12 @@ public interface Job {
      * @return
      */
     public JobStatus getStatus();
+    
+    /**
+     * Get a report of the status of each task in the job
+     * @return
+     */
+    public Collection<TaskStatus> getTaskStatus();
     
     /**
      * Get the current state of the job, based on the states of its respective tasks.

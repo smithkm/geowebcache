@@ -69,7 +69,6 @@ public class SeedTask extends GWCTask {
         final long START_TIME = System.currentTimeMillis();
 
         final String layerName = parentJob.getLayer().getName();
-        log.info(Thread.currentThread().getName() + " begins seeding layer : " + layerName);
 
         TileRange tr = parentJob.getRange();
 
@@ -98,10 +97,6 @@ public class SeedTask extends GWCTask {
                 checkInterrupted();
                 parentJob.getLayer().seedTile(tile, tryCache); // Try to seed
                 
-                if (log.isTraceEnabled()) {
-                    log.trace(Thread.currentThread().getName() + " seeded " + request.toString());
-                }
-                
                 // final long totalTilesCompleted = trIter.getTilesProcessed();
                 // note: computing the # of tiles processed by this thread instead of by the whole group
                 // also reduces thread contention as the trIter methods are synchronized and profiler
@@ -121,22 +116,16 @@ public class SeedTask extends GWCTask {
         } // Iterate over tile requests.
 
         if (this.terminate) {
-            log.info("Job on " + Thread.currentThread().getName() + " was terminated after "
+            log.info(getType() + " Task " + getTaskId() + " was terminated after "
                     + this.tilesDone + " tiles");
+            super.state = GWCTask.STATE.DEAD;
         } else {
-            log.info(Thread.currentThread().getName() + " completed (re)seeding layer " + layerName
+            log.info(getType() + " Task " + getTaskId() + " completed layer " + layerName
                     + " after " + this.tilesDone + " tiles and " + this.timeSpent + " seconds.");
         }
 
         checkInterrupted();
         
-        // TODO:  This seems to be waiting for the first thread that started running?  
-        //        Wouldn't the last to stop be more appropriate
-        //        Move to the finished handler in the job?
-        //if (threadOffset == 0 && doFilterUpdate) {
-        //    runFilterUpdates(tr.getGridSetId());
-        //}
-
         super.state = GWCTask.STATE.DONE;
     }
 

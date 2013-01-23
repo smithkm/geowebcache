@@ -1,12 +1,14 @@
 package org.geowebcache.seed;
 
+import java.io.Serializable;
+
 import org.geowebcache.seed.GWCTask.STATE;
 
 /**
  * Status of a seeding task at a particular time
  *
  */
-public class TaskStatus {
+public class TaskStatus implements Serializable {
     final private long time;
     final private long tilesDone;
     final private long tilesTotal;
@@ -16,24 +18,18 @@ public class TaskStatus {
     final private GWCTask.STATE state;
 
     /**
-     * 
-     * @param time
-     * @param tilesDone
-     * @param tilesTotal
-     * @param timeRemaining
-     * @param taskId
-     * @param state
+     * Create a timestamped record of the state of the given task.
+     * @param task
      */
-    public TaskStatus(long time, long tilesDone, long tilesTotal,
-            long timeRemaining, long timeSpent, long taskId, STATE state) {
+    public TaskStatus(GWCTask task) {
         super();
-        this.time = time;
-        this.tilesDone = tilesDone;
-        this.tilesTotal = tilesTotal;
-        this.timeRemaining = timeRemaining;
-        this.timeSpent = timeSpent;
-        this.taskId = taskId;
-        this.state = state;
+        this.time = System.currentTimeMillis();
+        this.tilesDone = task.getTilesDone();
+        this.tilesTotal = task.getTilesTotal();
+        this.timeRemaining = task.getTimeRemaining();
+        this.timeSpent = task.getTimeSpent();
+        this.taskId = task.getTaskId();
+        this.state = task.getState();
     }
 
     /**

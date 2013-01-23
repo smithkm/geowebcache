@@ -40,7 +40,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.seed.GWCTask;
@@ -291,24 +290,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
 
     public void setThreadPoolExecutor(SeederThreadPoolExecutor stpe) {
         threadPool = stpe;
-    }
-
-    /**
-     * Find a layer by name.
-     * @param layerName
-     * @return
-     * @throws GeoWebCacheException
-     */
-    public TileLayer findTileLayer(String layerName) throws GeoWebCacheException {
-        TileLayer layer = null;
-
-        layer = getTileLayerDispatcher().getTileLayer(layerName);
-
-        if (layer == null) {
-            throw new GeoWebCacheException("Uknown layer: " + layerName);
-        }
-
-        return layer;
     }
 
     /**

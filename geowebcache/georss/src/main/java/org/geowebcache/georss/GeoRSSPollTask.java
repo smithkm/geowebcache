@@ -306,6 +306,7 @@ class GeoRSSPollTask implements Runnable {
             seeder.dispatchJob(job);
 
             // Save the handles so we can stop them
+            // TODO store handles for Jobs instead.
             for (GWCTask task : job.getTasks()) {
                 seedTasks.add(task);
             }

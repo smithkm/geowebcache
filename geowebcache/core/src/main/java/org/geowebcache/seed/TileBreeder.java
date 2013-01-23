@@ -321,8 +321,17 @@ public abstract class TileBreeder {
      * @return
      * @throws GeoWebCacheException
      */
-    public abstract TileLayer findTileLayer(String layerName)
-            throws GeoWebCacheException;
+    public TileLayer findTileLayer(String layerName) throws GeoWebCacheException {
+        TileLayer layer = null;
+    
+        layer = getTileLayerDispatcher().getTileLayer(layerName);
+    
+        if (layer == null) {
+            throw new GeoWebCacheException("Uknown layer: " + layerName);
+        }
+    
+        return layer;
+    }
     
     /**
      * Get all tasks that are running

@@ -20,6 +20,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.NumberFormat;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -679,11 +680,12 @@ public class SeedFormRestlet extends GWCRestlet {
 
         final String layerName = tl.getName();
         int otherLayersTaskCount = 0;
+        int otherLayersJobCount = 0;
         if (!listAll) {
-            Iterator<GWCTask> tasks = seeder.getRunningAndPendingTasks();
-            while (tasks.hasNext()) {
-                if (!layerName.equals(tasks.next().getLayerName())) {
-                    otherLayersTaskCount++;
+            for(JobStatus job: seeder.getJobStatusList()){
+                if(job.getLayerName().equals(layerName)){
+                    otherLayersJobCount++;
+                    otherLayersTaskCount+=job.getThreadCount();
                 }
             }
         }
@@ -700,12 +702,14 @@ public class SeedFormRestlet extends GWCRestlet {
         doc.append("</select>\n");
         if (!listAll) {
             doc.append(" (there are ");
-            if (otherLayersTaskCount > 0) {
+            if (otherLayersJobCount > 0) {
                 doc.append(otherLayersTaskCount);
+                doc.append(" tasks in ");
+                doc.append(otherLayersJobCount);
             } else {
                 doc.append("no");
             }
-            doc.append(" tasks for other Layers)");
+            doc.append(" jobs for other Layers)");
         }
         doc.append("</form>\n");
 

@@ -16,25 +16,39 @@ public class JobStatus implements Serializable{
     final private String layerName;
     final private long threadCount;
     final private GWCTask.TYPE type;
+    final private long tilesDone;
+    final private long tilesTotal;
     
-    
-    public JobStatus(Collection<TaskStatus> taskStatuses, long time, long jobId, long threadCount, String layerName, GWCTask.TYPE type) {
+    /**
+     * create a timestamped record of the given job.
+     * @param job
+     */
+    public JobStatus(Job job) {
         super();
-        this.taskStatuses = taskStatuses;
-        this.time = time;
-        this.jobId = jobId;
-        this.threadCount = threadCount;
-        this.layerName = layerName;
-        this.type = type;
+        this.taskStatuses = job.getTaskStatus();
+        this.time = System.currentTimeMillis();
+        this.jobId = job.getId();
+        this.threadCount = job.getThreadCount();
+        this.layerName = job.getLayer().getName();
+        this.type = job.getType();
+        this.tilesTotal = job.getRange().tileCount();
+        
+        long tilesDone = 0;
+        for(TaskStatus task: this.taskStatuses){
+            tilesDone += task.getTilesDone();
+        }
+        this.tilesDone = tilesDone;
     }
     
     
     public Collection<TaskStatus> getTaskStatuses() {
         return Collections.unmodifiableCollection(taskStatuses);
     }
+    
     public long getTime() {
         return time;
     }
+    
     public long getJobId() {
         return jobId;
     }
@@ -50,4 +64,13 @@ public class JobStatus implements Serializable{
     public long getThreadCount() {
         return threadCount;
     }
+    
+    public long getTilesDone() {
+        return tilesDone;
+    }
+    
+    public long getTilesTotal() {
+        return tilesTotal;
+    }
+    
 }
