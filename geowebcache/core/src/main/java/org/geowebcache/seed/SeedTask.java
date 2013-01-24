@@ -110,6 +110,7 @@ public class SeedTask extends GWCTask {
                 seedCalls++;
                 
             } catch (Exception e) {
+                if (log.isDebugEnabled()) log.debug("Failure requesting tile", e);
                 parentSeedJob.failure(this, request, e); // Handle Failure
             }
             
