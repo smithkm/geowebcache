@@ -153,6 +153,7 @@ public class SeedFormRestlet extends GWCRestlet {
         } else if (form.getFirst("kill_all") != null) {
             handleKillAllThreadsPost(form, tl, resp);
         } else if (form.getFirst("minX") != null) {
+            // It's a request to create a seed job.
             if (tl == null) {
                 throw new RestletException("No layer specified", Status.CLIENT_ERROR_BAD_REQUEST);
             }

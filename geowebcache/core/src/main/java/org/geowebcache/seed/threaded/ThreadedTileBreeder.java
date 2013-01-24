@@ -149,8 +149,8 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         try {
             GWCTask[] tasks = ((ThreadedJob)job).getTasks();
             for (int i = 0; i < tasks.length; i++) {
-                final Long taskId = this.currentTaskId.incrementAndGet();
                 final GWCTask task = tasks[i];
+                final Long taskId = task.getTaskId();
                 Future<GWCTask> future = threadPool.submit(wrapTask(task));
                 this.currentPool.put(taskId, new SubmittedTask(task, future));
             }
