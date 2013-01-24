@@ -17,10 +17,12 @@
  */
 package org.geowebcache.mime;
 
+import java.io.Serializable;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class MimeType {
+public class MimeType implements Serializable {
     protected String mimeType;
     
     protected String format;
