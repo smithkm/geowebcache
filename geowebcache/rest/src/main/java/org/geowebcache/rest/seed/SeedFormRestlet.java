@@ -16,6 +16,7 @@
  */
 package org.geowebcache.rest.seed;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.text.NumberFormat;
@@ -69,6 +70,7 @@ public class SeedFormRestlet extends GWCRestlet {
     // private static Log log = LogFactory.getLog(org.geowebcache.rest.seed.SeedFormRestlet.class);
 
     private TileBreeder seeder;
+    private TablizerFactory tablizerFactory;
 
     public void handle(Request request, Response response) {
 
@@ -473,163 +475,23 @@ public class SeedFormRestlet extends GWCRestlet {
 
         Collection<JobStatus> jobs = seeder.getJobStatusList();
 
-        boolean tasks = false;
         if (jobs.isEmpty()) {
             doc.append("<ul><li><i>none</i></li></ul>\n");
         } else {
-            doc.append("<table border=\"0\">");
-            doc.append("<thead><tr><th style=\"padding-right:20px;\">Id</th><th style=\"padding-right:20px;\">Layer</th><th style=\"padding-right:20px;\">Status</th><th style=\"padding-right:20px;\">Type</th><th>Estimated # of tiles</th>"
-                    + "<th style=\"padding-right:20px;\">Tiles completed</th><th style=\"padding-right:20px;\">Time elapsed</th><th>Time remaining</th><th>Tasks</th><th>&nbsp;</th>");
-            doc.append("</tr></thead>");
-            tasks = true;
-        }
-
-        int row = 0;
-
-        final String layerName = tl.getName();
-        for(JobStatus job: jobs) {
-            if (!listAll && !layerName.equals(job.getLayerName())) {
-                continue;
+            JobTablizer tablizer = tablizerFactory.getJobTablizer(doc, tl);
+            try {
+                tablizer.table(jobs, null);
+            } catch (IOException e) {
+                throw new IllegalStateException("This should never happen as StringBuilder shouldn't throw IOException",e);
             }
-            doc.append("<tbody>");
-            doc.append("<tr class\"job\">");
-            doc.append("<th style=\"padding-right:20px;\" colspan=\"*\">Job ").append(job.getJobId()).append("</th>");
-            doc.append("</tr>");
-            for (TaskStatus task: job.getTaskStatuses()){
-    
-                final long spent = task.getTimeSpent();
-                final long remining = task.getTimeRemaining();
-                final long tilesDone = task.getTilesDone();
-                final long tilesTotal = task.getTilesTotal();
-    
-                NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
-                nf.setGroupingUsed(true);
-                final String tilesTotalStr;
-                if (tilesTotal < 0) {
-                    tilesTotalStr = "Too many to count";
-                } else {
-                    tilesTotalStr = nf.format(tilesTotal);
-                }
-                final String tilesDoneStr = nf.format(task.getTilesDone());
-                final STATE state = task.getState();
-    
-                final String status = STATE.UNSET.equals(state) || STATE.READY.equals(state) ? "PENDING"
-                        : state.toString();
-    
-                String timeSpent = toTimeString(spent, tilesDone, tilesTotal);
-                String timeRemaining = toTimeString(remining, tilesDone, tilesTotal);
-    
-                String bgColor = ++row % 2 == 0 ? "#FFFFFF" : "#DDDDDD";
-                doc.append("<tr style=\"background-color:" + bgColor + ";\">");
-                doc.append("<td style=\"text-align:right\">").append(task.getTaskId()).append("</td>");
-                doc.append("<td>");
-                if (!layerName.equals(job.getLayerName())) {
-                    doc.append("<a href=\"./").append(job.getLayerName()).append("\">");
-                }
-                doc.append(job.getLayerName());
-                if (!layerName.equals(job.getLayerName())) {
-                    doc.append("</a>");
-                }
-                doc.append("</td>");
-                doc.append("<td>").append(status).append("</td>");
-                doc.append("<td>").append(job.getType()).append("</td>");
-                doc.append("<td>").append(tilesTotalStr).append("</td>");
-                doc.append("<td>").append(tilesDoneStr).append("</td>");
-                doc.append("<td>").append(timeSpent).append("</td>");
-                doc.append("<td>").append(timeRemaining).append("</td>");
-                doc.append("<td>").append(job.getThreadCount()).append("</td>");
-                doc.append("<td>").append(makeThreadKillForm(task.getTaskId(), tl)).append("</td>");
-                doc.append("<tr>");
-            }
-            doc.append("</tbody>");
         }
 
-        if (tasks) {
-            doc.append("</table>");
-        }
-        doc.append("<p><a href=\"./" + layerName + "\">Refresh list</a></p>\n");
+        doc.append("<p><a href=\"./" + tl.getName() + "\">Refresh list</a></p>\n");
     }
 
-    // TODO
-    private void makeJobList(StringBuilder doc, TileLayer tl, boolean listAll) {
 
-        doc.append(makeKillallThreadsForm(tl, listAll));
-
-        doc.append("<h4>List of currently executing Jobs:</h4>\n");
-
-        Iterator<GWCTask> iter = seeder.getRunningAndPendingTasks();
-
-        boolean tasks = false;
-        if (!iter.hasNext()) {
-            doc.append("<ul><li><i>none</i></li></ul>\n");
-        } else {
-            doc.append("<table border=\"0\">");
-            doc.append("<tr style=\"font-weight: bold;\"><td style=\"padding-right:20px;\">Id</td><td style=\"padding-right:20px;\">Layer</td><td style=\"padding-right:20px;\">Status</td><td style=\"padding-right:20px;\">Type</td><td>Estimated # of tiles</td>"
-                    + "<td style=\"padding-right:20px;\">Tiles completed</td><td style=\"padding-right:20px;\">Time elapsed</td><td>Time remaining</td><td>Tasks</td><td>&nbsp;</td>");
-            doc.append("</tr>");
-            tasks = true;
-        }
-
-        int row = 0;
-
-        final String layerName = tl.getName();
-        while (iter.hasNext()) {
-            GWCTask task = iter.next();
-            if (!listAll && !layerName.equals(task.getLayerName())) {
-                continue;
-            }
-            final long spent = task.getTimeSpent();
-            final long remining = task.getTimeRemaining();
-            final long tilesDone = task.getTilesDone();
-            final long tilesTotal = task.getTilesTotal();
-
-            NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
-            nf.setGroupingUsed(true);
-            final String tilesTotalStr;
-            if (tilesTotal < 0) {
-                tilesTotalStr = "Too many to count";
-            } else {
-                tilesTotalStr = nf.format(tilesTotal);
-            }
-            final String tilesDoneStr = nf.format(task.getTilesDone());
-            final STATE state = task.getState();
-
-            final String status = STATE.UNSET.equals(state) || STATE.READY.equals(state) ? "PENDING"
-                    : state.toString();
-
-            String timeSpent = toTimeString(spent, tilesDone, tilesTotal);
-            String timeRemaining = toTimeString(remining, tilesDone, tilesTotal);
-
-            String bgColor = ++row % 2 == 0 ? "#FFFFFF" : "#DDDDDD";
-            doc.append("<tr style=\"background-color:" + bgColor + ";\">");
-            doc.append("<td style=\"text-align:right\">").append(task.getTaskId()).append("</td>");
-            doc.append("<td>");
-            if (!layerName.equals(task.getLayerName())) {
-                doc.append("<a href=\"./").append(task.getLayerName()).append("\">");
-            }
-            doc.append(task.getLayerName());
-            if (!layerName.equals(task.getLayerName())) {
-                doc.append("</a>");
-            }
-            doc.append("</td>");
-            doc.append("<td>").append(status).append("</td>");
-            doc.append("<td>").append(task.getType()).append("</td>");
-            doc.append("<td>").append(tilesTotalStr).append("</td>");
-            doc.append("<td>").append(tilesDoneStr).append("</td>");
-            doc.append("<td>").append(timeSpent).append("</td>");
-            doc.append("<td>").append(timeRemaining).append("</td>");
-            doc.append("<td>").append(task.getJob().getThreadCount()).append("</td>");
-            doc.append("<td>").append(makeThreadKillForm(task.getTaskId(), tl)).append("</td>");
-            doc.append("<tr>");
-        }
-
-        if (tasks) {
-            doc.append("</table>");
-        }
-        doc.append("<p><a href=\"./" + layerName + "\">Refresh list</a></p>\n");
-    }
-
-    private String toTimeString(long timeSeconds, final long tilesDone, final long tilesTotal) {
+    // TODO move this somewhere more appropriate
+    public static String toTimeString(long timeSeconds, final long tilesDone, final long tilesTotal) {
         String timeString;
         if (tilesDone < 50) {
             timeString = " Estimating...";
@@ -660,20 +522,6 @@ public class SeedFormRestlet extends GWCRestlet {
             }
         }
         return timeString;
-    }
-
-    private String makeThreadKillForm(Long key, TileLayer tl) {
-        String ret = "<form form id=\"kill\" action=\"./"
-                + tl.getName()
-                + "\" method=\"post\">"
-                + "<input type=\"hidden\" name=\"kill_thread\"  value=\"1\" />"
-                + "<input type=\"hidden\" name=\"thread_id\"  value=\""
-                + key
-                + "\" />"
-                + "<span><input style=\"padding: 0; margin-bottom: -12px; border: 1;\"type=\"submit\" value=\"Kill Task\"></span>"
-                + "</form>";
-
-        return ret;
     }
 
     private String makeKillallThreadsForm(TileLayer tl, boolean listAll) {
@@ -887,6 +735,10 @@ public class SeedFormRestlet extends GWCRestlet {
 
     public void setTileBreeder(TileBreeder seeder) {
         this.seeder = seeder;
+    }
+    
+    public void setTablizerFactory(TablizerFactory tablizerFactory){
+        this.tablizerFactory = tablizerFactory;
     }
 
 }

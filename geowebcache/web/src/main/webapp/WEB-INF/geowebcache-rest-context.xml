@@ -4,6 +4,9 @@
   <description>
     Bean configuration file for the gwc-rest module
   </description>
+    
+    <bean id="gwcTablizerFactory" class="org.geowebcache.rest.seed.TablizerFactory">
+    </bean>
 
   <!-- Restlets -->
   <bean id="gwcSeedRestlet" class="org.geowebcache.rest.seed.SeedRestlet">
@@ -13,6 +16,7 @@
 
   <bean id="gwcSeedFormRestlet" class="org.geowebcache.rest.seed.SeedFormRestlet">
     <property name="tileBreeder" ref="gwcTileBreeder"/>
+    <property name="tablizerFactory" ref="gwcTablizerFactory"/>
   </bean>
   <bean id="gwcReloadRestlet" class="org.geowebcache.rest.reload.ReloadRestlet">
     <property name="tileLayerDispatcher" ref="gwcTLDispatcher"/>
