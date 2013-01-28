@@ -134,7 +134,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
     @Override
     public SeedJob createSeedJob(int threadCount, boolean reseed, TileRangeIterator trIter, TileLayer tl, boolean filterUpdate){
         return new ThreadedSeedJob(currentJobId.getAndIncrement(), threadCount,
-                this, false, trIter, tl, tileFailureRetryCount, tileFailureRetryWaitTime,
+                this, reseed, trIter, tl, tileFailureRetryCount, tileFailureRetryWaitTime,
                 totalFailuresBeforeAborting,filterUpdate);
     }
     
