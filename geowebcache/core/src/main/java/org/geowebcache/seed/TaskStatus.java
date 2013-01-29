@@ -31,6 +31,21 @@ public class TaskStatus implements Serializable {
         this.taskId = task.getTaskId();
         this.state = task.getState();
     }
+    
+    /**
+     * Create a copy of the given TaskStatus
+     * @param task
+     */
+    public TaskStatus(TaskStatus task) {
+        super();
+        this.time = task.getTime();
+        this.tilesDone = task.getTilesDone();
+        this.tilesTotal = task.getTilesTotal();
+        this.timeRemaining = task.getTimeRemaining();
+        this.timeSpent = task.getTimeSpent();
+        this.taskId = task.getTaskId();
+        this.state = task.getState();
+    }
 
     /**
      * The time that the status was recorded
