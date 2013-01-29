@@ -29,7 +29,7 @@ public class JobTablizer {
         this.tl = tl;
     }
     
-    abstract class Column {
+    protected abstract class Column {
         public Column(String header) {
             this.header=header;
         }
