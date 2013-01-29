@@ -471,19 +471,12 @@ public class SeedFormRestlet extends GWCRestlet {
 
         doc.append(makeKillallThreadsForm(tl, listAll));
 
-        doc.append("<h4>List of currently executing tasks:</h4>\n");
-
         Collection<JobStatus> jobs = seeder.getJobStatusList();
-
-        if (jobs.isEmpty()) {
-            doc.append("<ul><li><i>none</i></li></ul>\n");
-        } else {
-            JobTablizer tablizer = tablizerFactory.getJobTablizer(doc, tl);
-            try {
-                tablizer.table(jobs, null);
-            } catch (IOException e) {
-                throw new IllegalStateException("This should never happen as StringBuilder shouldn't throw IOException",e);
-            }
+        JobTablizer tablizer = tablizerFactory.getJobTablizer(doc, tl);
+        try {
+            tablizer.table(jobs, null, "List of currently executing tasks");
+        } catch (IOException e) {
+            throw new IllegalStateException("This should never happen as StringBuilder shouldn't throw IOException",e);
         }
 
         doc.append("<p><a href=\"./" + tl.getName() + "\">Refresh list</a></p>\n");

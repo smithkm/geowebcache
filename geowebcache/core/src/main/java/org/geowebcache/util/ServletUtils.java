@@ -397,13 +397,14 @@ public class ServletUtils {
         return "<head>\n" + "<title>" + pageTitle + "</title>" + "<style type=\"text/css\">\n"
                 + "body, td {\n"
                 + "font-family: Verdana,Arial,\'Bitstream Vera Sans\',Helvetica,sans-serif;\n"
-                + "font-size: 0.85em;\n" + "vertical-align: top;\n" + "}\n" + "</style>\n"
+                + "font-size: 0.85em;\n" + "vertical-align: top;\n" + "}\n"
+                + "table.jobList tr.even {background-color: #DDD;}"+ "</style>\n"
                 + "</head>\n";
     }
 
     public static String gwcHtmlLogoLink(String relBasePath) {
         return "<a id=\"logo\" href=\"" + relBasePath + "\">" + "<img src=\"" + relBasePath
-                + "rest/web/geowebcache_logo.png\"" + "height=\"70\" width=\"247\" border=\"0\"/>"
+                + "rest/web/geowebcache_logo.png\" " + "height=\"70\" width=\"247\" border=\"0\"/>"
                 + "</a>\n";
     }
 

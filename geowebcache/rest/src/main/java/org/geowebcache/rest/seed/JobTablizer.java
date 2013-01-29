@@ -2,6 +2,7 @@ package org.geowebcache.rest.seed;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Collection;
 import java.util.Locale;
 
 import org.geowebcache.layer.TileLayer;
@@ -66,13 +67,15 @@ public class JobTablizer {
     }
     
     protected void jobRow(JobStatus job) throws IOException {
-        doc.append("<tr>");
-        doc.append("<th colspan=\"*\" scope=\"rowgroup\">Job ");
+        doc.append("<tr class=\"job\">");
+        doc.append("<th colspan=\"").append(Integer.toString(HEADERS.length-1)).append("\" scope=\"rowgroup\">Job ");
         doc.append(Long.toString(job.getJobId()));
-        doc.append("</td>");
+        doc.append("</th>");
+        doc.append("<td><s>Kill Job</s></td>"); // TODO
         doc.append("</tr>");
     }
 
+    int taskRowCounter = 0;
     protected void taskRow(TaskStatus task, JobStatus job) throws IOException {
         final long spent = task.getTimeSpent();
         final long remining = task.getTimeRemaining();
@@ -98,7 +101,7 @@ public class JobTablizer {
 
         String layerName = tl.getName();
         
-        doc.append("<tr>");
+        doc.append("<tr class=\"task ").append(taskRowCounter%2==0?"even":"odd").append("\">");
         doc.append("<td scope=\"row\">").append(Long.toString(task.getTaskId())).append("</td>");
         doc.append("<td>");
         if (!layerName.equals(job.getLayerName())) {
@@ -119,19 +122,31 @@ public class JobTablizer {
         doc.append("<td>").append(makeThreadKillForm(task.getTaskId(), tl)).append("</td>");
 
         doc.append("</tr>");
+        
+        taskRowCounter++;
     }
 
-    public void table(Iterable<JobStatus> jobs, String id) throws IOException {
+    protected void empty() throws IOException {
+        doc.append("<tr class=\"listEmpty\"><td colspan=\"*\">None</td></tr>");
+    }
+    
+    public void table(Collection<JobStatus> jobs, String id, String caption) throws IOException {
         if(id!=null){
-            doc.append("<table id=\"").append(id).append("\">");
+            doc.append("<table class=\"jobList\" id=\"").append(id).append("\">");
         } else {
-            doc.append("<table>");
+            doc.append("<table class=\"jobList\">");
+        }
+        if(caption!=null){
+            doc.append("<caption>").append(caption).append("</caption>");
         }
         head();
         foot();
-        
-        for(JobStatus job: jobs){
-            jobBody(job);
+        if(jobs.isEmpty()){
+            empty();
+        } else {
+            for(JobStatus job: jobs){
+                jobBody(job);
+            }
         }
         doc.append("</table>");
    }
@@ -149,7 +164,7 @@ public class JobTablizer {
                 + "<input type=\"hidden\" name=\"thread_id\"  value=\""
                 + key
                 + "\" />"
-                + "<span><input style=\"padding: 0; margin-bottom: -12px; border: 1;\"type=\"submit\" value=\"Kill Task\"></span>"
+                + "<span><input style=\"padding: 0; margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Task\"></span>"
                 + "</form>";
 
         return ret;
