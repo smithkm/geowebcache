@@ -103,11 +103,11 @@ public class JobTablizer {
         }
     };
     
-    Column[] firstColumns = {id};
-    Column[] midColumns = {layer, state, type, total_tiles, cmplt_tiles, elapsed_time, remaining_time};
-    Column[] lastColumns = {kill};
+    protected Column[] firstColumns = {id};
+    protected Column[] midColumns = {layer, state, type, total_tiles, cmplt_tiles, elapsed_time, remaining_time};
+    protected Column[] lastColumns = {kill};
    
-    private int getColumnCount(){
+    protected int getColumnCount(){
         return firstColumns.length+midColumns.length+lastColumns.length;
     }
     
