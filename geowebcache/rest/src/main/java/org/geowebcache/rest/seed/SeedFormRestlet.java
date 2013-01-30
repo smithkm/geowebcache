@@ -224,19 +224,19 @@ public class SeedFormRestlet extends GWCRestlet {
                 Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
                 makePullDown(doc, parameterId, keysValues, defaultValue);
             } else if (pf instanceof RegexParameterFilter) {
-                makeTextInput(doc, parameterId, 25);
+                makeTextInput(doc, parameterId, 25, null);
             } else if (pf instanceof FloatParameterFilter) {
                 FloatParameterFilter floatFilter = (FloatParameterFilter) pf;
                 if (floatFilter.getValues().isEmpty()) {
                     // accepts any value
-                    makeTextInput(doc, parameterId, 25);
+                    makeTextInput(doc, parameterId, 25, null);
                 } else {
                     Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
                     makePullDown(doc, parameterId, keysValues, defaultValue);
                 }
             } else if ("org.geowebcache.filter.parameters.NaiveWMSDimensionFilter".equals(pf
                     .getClass().getName())) {
-                makeTextInput(doc, parameterId, 25);
+                makeTextInput(doc, parameterId, 25, null);
             } else {
                 throw new IllegalStateException("Unknown parameter filter type for layer '"
                         + tl.getName() + "': " + pf.getClass().getName());
@@ -303,10 +303,17 @@ public class SeedFormRestlet extends GWCRestlet {
 
     private void makeBboxFields(StringBuilder doc) {
         doc.append("<tr><td valign=\"top\">Bounding box:</td><td>\n");
-        makeTextInput(doc, "minX", 6);
-        makeTextInput(doc, "minY", 6);
-        makeTextInput(doc, "maxX", 6);
-        makeTextInput(doc, "maxY", 6);
+        doc.append("<div style=\"display:inline-block; vertical-align:middle;\">");
+        makeTextInput(doc, "minX", 6, "Left");
+        doc.append("</div>");
+        doc.append("<div style=\"display:inline-block; vertical-align:middle;\">");
+        makeTextInput(doc, "maxY", 6, "Top");
+        doc.append("<br />");
+        makeTextInput(doc, "minX", 6, "Bottom");
+        doc.append("</div>");
+        doc.append("<div style=\"display:inline-block; vertical-align:middle;\">");
+        makeTextInput(doc, "maxX", 6, "Right");
+        doc.append("</div>");
         doc.append("</br>These are optional, approximate values are fine.");
         doc.append("</td></tr>\n");
     }
@@ -321,8 +328,13 @@ public class SeedFormRestlet extends GWCRestlet {
 
     }
 
-    private void makeTextInput(StringBuilder doc, String id, int size) {
-        doc.append("<input name=\"" + id + "\" type=\"text\" size=\"" + size + "\" />\n");
+    private void makeTextInput(StringBuilder doc, String id, int size, String desc) {
+        doc.append("<input name=\"" + id + "\" type=\"text\" size=\"" + size + "\" ");
+        if(desc!=null){
+            doc.append("title=\""+desc+"\" ");
+            doc.append("placeholder=\""+desc+"\" ");
+        }
+        doc.append("/>\n");
     }
 
     private void makeSubmit(StringBuilder doc) {

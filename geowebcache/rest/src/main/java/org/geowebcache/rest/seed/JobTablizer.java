@@ -106,9 +106,9 @@ public class JobTablizer {
                     + "<input type=\"hidden\" name=\"thread_id\"  value=\""
                     + task.getTaskId()
                     + "\" />"
-                    + "<span><input style=\"padding: 0; "
-                    + (task.getState().isStopped()?"disabled=\"disabled\"":"<!--enabled-->")
-                    +" margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Task\"></span>"
+                    + "<span><input "
+                    +(task.getState().isStopped()?"disabled=\"disabled\"":"")
+                    +" style=\"padding: 0; margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Task\"></span>"
                     + "</form>";
             return ret;
         }
