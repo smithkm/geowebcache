@@ -496,4 +496,13 @@ public abstract class TileBreeder {
         if (j==null) throw new JobNotFoundException(id);
         return j;
     }
+    
+    /**
+     * Jobs must call this when they complete.
+     * @param job
+     */
+    protected void jobDone(Job job) {
+        Assert.isTrue(job.getBreeder()==this, "Job was not created by this breeder.");
+        jobs.remove(job.getId());
+    }
 }

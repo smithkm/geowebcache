@@ -150,9 +150,12 @@ abstract class ThreadedJob implements Job {
         if (doFilterUpdate) {
             runFilterUpdates();
         }
+        
         double groupTotalTimeSecs = (System.currentTimeMillis() - (double) groupStartTime) / 1000;
         log.info("Job "+id+" finished " /*+ parsedType*/ + " after "
                 + groupTotalTimeSecs + " seconds");
+        
+        ((ThreadedTileBreeder)breeder).jobDone(this);
     }
     
     /**

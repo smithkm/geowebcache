@@ -386,4 +386,20 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         return super.createTruncateTask(job);
     }
 
+    @Override
+    protected void jobDone(Job job) {
+        lock.writeLock().lock(); // Not sure if I need this here
+        try{
+            super.jobDone(job);
+            ThreadedJob tJob = (ThreadedJob) job;
+            for(GWCTask task: tJob.getTasks()){
+                Assert.state(task.getState().isStopped(), "Job reported done has tasks that have not stopped.");
+            }
+        } finally {
+            lock.writeLock().unlock();
+            // TODO, fire an event to let interested parties know a job has completed.
+            drain();
+        }
+        
+    }
 }

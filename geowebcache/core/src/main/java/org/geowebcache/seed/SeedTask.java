@@ -127,7 +127,7 @@ public class SeedTask extends GWCTask {
 
         checkInterrupted();
         
-        super.state = GWCTask.STATE.DONE;
+        if(!super.state.isStopped()) super.state = GWCTask.STATE.DONE;
     }
 
     /**

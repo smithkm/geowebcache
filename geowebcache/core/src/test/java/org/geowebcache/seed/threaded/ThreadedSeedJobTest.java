@@ -224,9 +224,16 @@ public class ThreadedSeedJobTest extends AbstractJobTest {
         // This should kill the task
         job.failure(task, tr, new RuntimeException("Just a test"));
         
+        verify(breeder);
+        reset(breeder);{
+            ((ThreadedTileBreeder)breeder).jobDone(job);
+            expectLastCall().once();
+        } replay(breeder);
+        
         job.threadStopped(task);
         
         verify(task);
+        verify(breeder);
     }
 
     @Override
