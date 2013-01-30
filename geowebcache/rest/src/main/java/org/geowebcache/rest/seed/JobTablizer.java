@@ -112,13 +112,13 @@ public class JobTablizer {
     }
     
     protected void head() throws IOException {
-        doc.append("<thead>");
-        doc.append("<tr>");
+        doc.append("<thead>\n");
+        doc.append("  <tr>");
         
         columnHeaders();
         
-        doc.append("</tr>");
-        doc.append("</thead>");
+        doc.append("  </tr>");
+        doc.append("</thead>\n");
     }
     
     protected void columnHeaders() throws IOException {
@@ -148,7 +148,8 @@ public class JobTablizer {
             } else {
                 doc.append("<td>");
             }
-            doc.append(data).append("</th>");
+            doc.append(data);
+            doc.append("</td>");
         } else {
             if(scope!=null){
                 doc.append("<td scope=\"").append(scope).append("\"/>");
@@ -159,23 +160,23 @@ public class JobTablizer {
     }
     
     protected void jobBody(JobStatus job) throws IOException {
-        doc.append("<tbody>");
+        doc.append("  <tbody>\n");
         
         jobRow(job);
         for(TaskStatus task: job.getTaskStatuses()){
             taskRow(task, job);
         }
         
-        doc.append("</tbody>");
+        doc.append("  </tbody>\n");
     }
     
     protected void jobRow(JobStatus job) throws IOException {
-        doc.append("<tr class=\"job\">");
+        doc.append("    <tr class=\"job\">");
         doc.append("<th colspan=\"").append(Integer.toString(getColumnCount()-1)).append("\" scope=\"rowgroup\">Job ");
         doc.append(Long.toString(job.getJobId()));
         doc.append("</th>");
         doc.append("<td><s>Kill Job</s></td>"); // TODO
-        doc.append("</tr>");
+        doc.append("</tr>\n");
     }
 
     int taskRowCounter = 0;
@@ -191,23 +192,23 @@ public class JobTablizer {
             cell(col.getField(job, task), "row");
         }
 
-        doc.append("</tr>");
+        doc.append("</tr>\n");
         
         taskRowCounter++;
     }
 
     protected void empty() throws IOException {
-        doc.append("<tr class=\"listEmpty\"><td colspan=\"*\">None</td></tr>");
+        doc.append("  <tbody><tr class=\"listEmpty\"><td colspan=\"*\">None</td></tr></tbody>\n");
     }
     
     public void table(Collection<JobStatus> jobs, String id, String caption) throws IOException {
         if(id!=null){
-            doc.append("<table class=\"jobList\" id=\"").append(id).append("\">");
+            doc.append("<table class=\"jobList\" id=\"").append(id).append("\">\n");
         } else {
-            doc.append("<table class=\"jobList\">");
+            doc.append("<table class=\"jobList\">\n");
         }
         if(caption!=null){
-            doc.append("<caption>").append(caption).append("</caption>");
+            doc.append("  <caption>").append(caption).append("</caption>\n");
         }
         head();
         foot();
@@ -218,7 +219,7 @@ public class JobTablizer {
                 jobBody(job);
             }
         }
-        doc.append("</table>");
+        doc.append("</table>\n");
    }
 
     protected void foot() throws IOException {
