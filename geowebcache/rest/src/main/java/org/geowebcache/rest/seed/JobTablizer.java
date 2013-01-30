@@ -99,7 +99,18 @@ public class JobTablizer {
     protected final Column kill  = new Column(null){
         @Override
         public String getField(JobStatus job, TaskStatus task) {
-            return makeThreadKillForm(task.getTaskId(), tl);
+            String ret = "<form form id=\"kill\" action=\"./"
+                    + tl.getName()
+                    + "\" method=\"post\">"
+                    + "<input type=\"hidden\" name=\"kill_thread\"  value=\"1\" />"
+                    + "<input type=\"hidden\" name=\"thread_id\"  value=\""
+                    + task.getTaskId()
+                    + "\" />"
+                    + "<span><input style=\"padding: 0; "
+                    + (task.getState().isStopped()?"disabled=\"disabled\"":"<!--enabled-->")
+                    +" margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Task\"></span>"
+                    + "</form>";
+            return ret;
         }
     };
     
@@ -175,7 +186,16 @@ public class JobTablizer {
         doc.append("<th colspan=\"").append(Integer.toString(getColumnCount()-1)).append("\" scope=\"rowgroup\">Job ");
         doc.append(Long.toString(job.getJobId()));
         doc.append("</th>");
-        doc.append("<td><s>Kill Job</s></td>"); // TODO
+        doc.append("<td>");
+        doc.append("<form form id=\"kill\" action=\"./"
+                + tl.getName()
+                + "\" method=\"post\">"
+                + "<input type=\"hidden\" name=\"kill_job\"  value=\"1\" />"
+                + "<input type=\"hidden\" name=\"job_id\"  value=\""
+                + job.getJobId()
+                + "\" />"
+                + "<span><input style=\"padding: 0; margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Job\"></span>"
+                + "</form>");
         doc.append("</tr>\n");
     }
 
