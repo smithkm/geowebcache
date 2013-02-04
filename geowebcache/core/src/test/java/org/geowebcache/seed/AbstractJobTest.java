@@ -126,14 +126,14 @@ public void testGetStateSingle() throws Exception {
     assertGetState(STATE.READY, 
             STATE.READY);
 
-    assertGetState(STATE.DEAD, 
-            STATE.DEAD);
+    assertGetState(STATE.FAILED, 
+            STATE.FAILED);
 
     assertGetState(STATE.RUNNING, 
             STATE.RUNNING);
 
     assertGetState(STATE.READY, 
-            STATE.UNSET);
+            STATE.INITIALIZING);
 
     assertGetState(STATE.DONE, 
             STATE.DONE);
@@ -155,10 +155,10 @@ public void testGetStateDone() throws Exception {
             STATE.READY, STATE.DONE);
 
     assertGetState(STATE.DONE, 
-            STATE.DONE, STATE.UNSET);
+            STATE.DONE, STATE.INITIALIZING);
 
     assertGetState(STATE.DONE, 
-            STATE.UNSET, STATE.DONE);
+            STATE.INITIALIZING, STATE.DONE);
     
 }
 
@@ -172,13 +172,13 @@ public void testGetStateReady() throws Exception {
             STATE.READY, STATE.READY);
 
     assertGetState(STATE.READY, 
-            STATE.UNSET, STATE.UNSET);
+            STATE.INITIALIZING, STATE.INITIALIZING);
 
     assertGetState(STATE.READY, 
-            STATE.READY, STATE.UNSET);
+            STATE.READY, STATE.INITIALIZING);
 
     assertGetState(STATE.READY, 
-            STATE.UNSET, STATE.READY);
+            STATE.INITIALIZING, STATE.READY);
     
 }
 
@@ -194,7 +194,7 @@ public void testGetStateRunning() throws Exception {
     assertGetState(STATE.RUNNING, 
             STATE.RUNNING, STATE.DONE);
     assertGetState(STATE.RUNNING, 
-            STATE.RUNNING, STATE.UNSET);
+            STATE.RUNNING, STATE.INITIALIZING);
     assertGetState(STATE.RUNNING, 
             STATE.RUNNING, STATE.READY);
     
@@ -206,28 +206,28 @@ public void testGetStateRunning() throws Exception {
  */
 @Test
 public void testGetStateDead() throws Exception {
-    assertGetState(STATE.DEAD, 
-            STATE.DEAD, STATE.DEAD);
+    assertGetState(STATE.FAILED, 
+            STATE.FAILED, STATE.FAILED);
 
-    assertGetState(STATE.DEAD, 
-            STATE.DEAD, STATE.RUNNING);
-    assertGetState(STATE.DEAD, 
-            STATE.RUNNING, STATE.DEAD);
+    assertGetState(STATE.FAILED, 
+            STATE.FAILED, STATE.RUNNING);
+    assertGetState(STATE.FAILED, 
+            STATE.RUNNING, STATE.FAILED);
     
-    assertGetState(STATE.DEAD, 
-            STATE.DEAD, STATE.DONE);
-    assertGetState(STATE.DEAD, 
-            STATE.DONE, STATE.DEAD);
+    assertGetState(STATE.FAILED, 
+            STATE.FAILED, STATE.DONE);
+    assertGetState(STATE.FAILED, 
+            STATE.DONE, STATE.FAILED);
     
-    assertGetState(STATE.DEAD, 
-            STATE.DEAD, STATE.READY);
-    assertGetState(STATE.DEAD, 
-            STATE.READY, STATE.DEAD);
+    assertGetState(STATE.FAILED, 
+            STATE.FAILED, STATE.READY);
+    assertGetState(STATE.FAILED, 
+            STATE.READY, STATE.FAILED);
     
-    assertGetState(STATE.DEAD, 
-            STATE.DEAD, STATE.UNSET);
-    assertGetState(STATE.DEAD, 
-            STATE.UNSET, STATE.DEAD);
+    assertGetState(STATE.FAILED, 
+            STATE.FAILED, STATE.INITIALIZING);
+    assertGetState(STATE.FAILED, 
+            STATE.INITIALIZING, STATE.FAILED);
     
 }
 
@@ -269,14 +269,14 @@ public void testGetStatus() throws Exception {
 @Test
 public void testTerminate() throws Exception {
     TileBreeder breeder = createMockTileBreeder();
-    STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY};
+    STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.INITIALIZING, STATE.READY};
     GWCTask[] tasks = new GWCTask[states.length]; 
     
     for(int i =0;i<states.length;i++){
         STATE s = states[i];
         GWCTask task = createMockTask(breeder);
         taskForState(task, s);
-        if(s != STATE.DEAD && s != STATE.DONE){
+        if(s != STATE.FAILED && s != STATE.DONE){
             task.terminateNicely();
             expectLastCall().once();
         }
@@ -300,13 +300,13 @@ public void testTerminate() throws Exception {
 @Test
 public void testTerminateSingle() throws Exception {
     
-    STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.UNSET, STATE.READY};
+    STATE[] states = {STATE.DONE, STATE.RUNNING, STATE.RUNNING, STATE.INITIALIZING, STATE.READY};
     
     for(STATE s: states){
         TileBreeder breeder = createMockTileBreeder();
         GWCTask task = createMockTask(breeder);
         taskForState(task, s);
-        if(s != STATE.DEAD && s != STATE.DONE){
+        if(s != STATE.FAILED && s != STATE.DONE){
             task.terminateNicely();
             expectLastCall().once();
         }

@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.seed.GWCTask;
@@ -56,6 +57,7 @@ import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.TruncateJob;
 import org.geowebcache.seed.TruncateTask;
 import org.geowebcache.storage.StorageBroker;
+import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.Assert;
@@ -112,6 +114,9 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
     private AtomicLong currentTaskId = new AtomicLong();
     private AtomicLong currentJobId = new AtomicLong();
 
+    /**
+     * Lock for manipulating the internal job/task lists.
+     */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private static class SubmittedTask {
@@ -125,14 +130,24 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         }
     }
 
+    public Job createJob(TileRange tr, TileLayer tl, GWCTask.TYPE type,
+            int threadCount, boolean filterUpdate) throws GeoWebCacheException {
+        lock.writeLock().lock();
+        try {
+            return super.createJob(tr, tl, type, threadCount, filterUpdate);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+    
     @Override
-    public TruncateJob createTruncateJob(TileRangeIterator trIter, TileLayer tl, boolean filterUpdate){
+    protected TruncateJob createTruncateJob(TileRangeIterator trIter, TileLayer tl, boolean filterUpdate){
         return new ThreadedTruncateJob(currentJobId.getAndIncrement(), this, 
                 trIter, tl, filterUpdate);
     }
     
     @Override
-    public SeedJob createSeedJob(int threadCount, boolean reseed, TileRangeIterator trIter, TileLayer tl, boolean filterUpdate){
+    protected SeedJob createSeedJob(int threadCount, boolean reseed, TileRangeIterator trIter, TileLayer tl, boolean filterUpdate){
         return new ThreadedSeedJob(currentJobId.getAndIncrement(), threadCount,
                 this, reseed, trIter, tl, tileFailureRetryCount, tileFailureRetryWaitTime,
                 totalFailuresBeforeAborting,filterUpdate);
@@ -159,17 +174,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
         }
     }
 
-    /**
-     * Method returns List of Strings representing the status of the currently running and scheduled
-     * threads
-     * 
-     * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
-     *         where {@code taskStatus} is one of:
-     *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
-     */
-    public long[][] getStatusList() {
-        return getStatusList(null);
-    }
     
     
     public Collection<TaskStatus> getTaskStatusList(String layerName){
@@ -197,6 +201,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
     public Collection<JobStatus> getJobStatusList(String layerName) {
         List<JobStatus> list = new ArrayList<JobStatus>(jobs.size());
         lock.readLock().lock();
+        lock.readLock().lock();
         try {
             for (Job job: jobs.values()) {
                 if (layerName != null && !layerName.equals(job.getLayer().getName())) {
@@ -206,6 +211,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
             }
         } finally {
             lock.readLock().unlock();
+            lock.readLock().unlock();
             this.drain();
         }
         return list;
@@ -213,61 +219,6 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
 
     public Collection<TaskStatus> getTaskStatusList() {
         return getTaskStatusList(null);
-    }
-
-    /**
-     * Method returns List of Strings representing the status of the currently running and scheduled
-     * threads for a specific layer.
-     * 
-     * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
-     *         where {@code taskStatus} is one of:
-     *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
-     * @param layerName the name of the layer.  null for all layers.
-     * @return
-     */
-    public long[][] getStatusList(final String layerName) {
-        List<long[]> list = new ArrayList<long[]>(currentPool.size());
-
-        lock.readLock().lock();
-        try {
-            Iterator<Entry<Long, SubmittedTask>> iter = currentPool.entrySet().iterator();
-            while (iter.hasNext()) {
-                Entry<Long, SubmittedTask> entry = iter.next();
-                GWCTask task = entry.getValue().task;
-                if (layerName != null && !layerName.equals(task.getLayerName())) {
-                    continue;
-                }
-                long[] ret = new long[5];
-                ret[0] = task.getTilesDone();
-                ret[1] = task.getTilesTotal();
-                ret[2] = task.getTimeRemaining();
-                ret[3] = task.getTaskId();
-                ret[4] = stateCode(task.getState());
-                list.add(ret);
-            }
-        } finally {
-            lock.readLock().unlock();
-            this.drain();
-        }
-
-        long[][] ret = list.toArray(new long[list.size()][]);
-        return ret;
-    }
-
-    private long stateCode(STATE state) {
-        switch (state) {
-        case UNSET:
-        case READY:
-            return 0;
-        case RUNNING:
-            return 1;
-        case DONE:
-            return 2;
-        case DEAD:
-            return -1;
-        default:
-            throw new IllegalArgumentException("Unknown state: " + state);
-        }
     }
 
     /**
@@ -307,7 +258,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
      */
     public Iterator<GWCTask> getRunningAndPendingTasks() {
         drain();
-        return filterTasks(STATE.READY, STATE.UNSET, STATE.RUNNING);
+        return filterTasks(STATE.READY, STATE.INITIALIZING, STATE.RUNNING);
     }
 
     /**
@@ -316,7 +267,7 @@ public class ThreadedTileBreeder extends TileBreeder implements ApplicationConte
      */
     public Iterator<GWCTask> getPendingTasks() {
         drain();
-        return filterTasks(STATE.READY, STATE.UNSET);
+        return filterTasks(STATE.READY, STATE.INITIALIZING);
     }
 
     /**

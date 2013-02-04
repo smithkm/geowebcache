@@ -119,7 +119,7 @@ public class SeedTask extends GWCTask {
         if (this.terminate) {
             log.info(getType() + " Task " + getTaskId() + " was terminated after "
                     + this.tilesDone + " tiles");
-            super.state = GWCTask.STATE.DEAD;
+            super.state = GWCTask.STATE.ABORTED;
         } else {
             log.info(getType() + " Task " + getTaskId() + " completed layer " + layerName
                     + " after " + this.tilesDone + " tiles and " + this.timeSpent + " seconds.");

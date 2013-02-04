@@ -37,13 +37,13 @@ public class TruncateTask extends GWCTask {
             parentJob.getBreeder().getStorageBroker().delete(parentJob.getRange());
         } catch (Exception e) {
             e.printStackTrace();
-            super.state = GWCTask.STATE.DEAD;
+            super.state = GWCTask.STATE.FAILED;
             log.error("During truncate request: " + e.getMessage());
         }
 
         checkInterrupted();
 
-        if (super.state != GWCTask.STATE.DEAD) {
+        if (super.state != GWCTask.STATE.FAILED) {
             super.state = GWCTask.STATE.DONE;
             log.debug("Completed truncate request.");
         }

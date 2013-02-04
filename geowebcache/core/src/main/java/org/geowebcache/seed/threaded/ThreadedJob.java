@@ -179,7 +179,7 @@ abstract class ThreadedJob implements Job {
     public void terminate() {
         for(GWCTask task: threads){
             synchronized(task) {
-                if(task.getState()!=STATE.DEAD && task.getState()!=STATE.DONE){
+                if(task.getState()!=STATE.FAILED && task.getState()!=STATE.DONE){
                     task.terminateNicely();
                 }
             }

@@ -40,7 +40,30 @@ public abstract class GWCTask {
     };
 
     public static enum STATE {
-        UNSET(false), READY(false), RUNNING(false), DONE(true), DEAD(true);
+        /**
+         * Not ready to run yet
+         */
+        INITIALIZING(false), 
+        /**
+         * Ready to run
+         */
+        READY(false), 
+        /**
+         * Currently running
+         */
+        RUNNING(false), 
+        /**
+         * Completed successfully
+         */
+        DONE(true), 
+        /**
+         * Stopped due to failure while running
+         */
+        FAILED(true), 
+        /**
+         * Stopped externally
+         */
+        ABORTED(true);
         
         /**
          * A state where the task is no longer running or able to run
@@ -64,7 +87,7 @@ public abstract class GWCTask {
 
     protected final TYPE parsedType; // = TYPE.UNSET; // TODO Do we need the UNSET type?
 
-    protected STATE state = STATE.UNSET;
+    protected STATE state = STATE.INITIALIZING;
 
     // protected final String layerName;
 
@@ -107,10 +130,10 @@ public abstract class GWCTask {
             doActionInternal();
         } finally {
             if(log.isTraceEnabled()) log.trace("Task "+taskId+" ending.");
-            // If it's not DONE, it should be DEAD at this point.
+            // If it's not DONE or ABORTED, it should be DEAD at this point.
             if(!getState().isStopped()){
                 log.info("Task "+Long.toString(taskId)+"reached end but was still in state "+getState()+".  Setting to DEAD.");
-                state=STATE.DEAD;
+                state=STATE.FAILED;
             }
             dispose();
             getJob().threadStopped(this);
@@ -218,7 +241,7 @@ public abstract class GWCTask {
      */
     protected void checkInterrupted() throws InterruptedException {
         if (Thread.interrupted()) {
-            this.state = STATE.DEAD;
+            this.state = STATE.FAILED;
             parentJob.threadStopped(this);
             throw new InterruptedException();
         }

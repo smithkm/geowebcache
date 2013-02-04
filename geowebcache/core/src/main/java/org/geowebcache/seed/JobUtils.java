@@ -12,8 +12,8 @@ public class JobUtils {
         while(states.hasNext()){
             GWCTask.STATE s = states.next();
             switch(s){
-            case DEAD:
-                return GWCTask.STATE.DEAD; // TODO not sure this is right, maybe it should only be if all are DEAD.
+            case FAILED:
+                return GWCTask.STATE.FAILED; // TODO not sure this is right, maybe it should only be if all are DEAD.
             case DONE:
                 allReadyUnset = false;
                 break;

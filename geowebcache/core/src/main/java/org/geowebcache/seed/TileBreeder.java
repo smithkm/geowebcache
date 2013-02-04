@@ -237,29 +237,6 @@ public abstract class TileBreeder {
      */
     public abstract void dispatchJob(Job job);
     
-    /**
-     * Method returns List of Strings representing the status of the currently running and scheduled
-     * threads
-     * 
-     * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
-     *         where {@code taskStatus} is one of:
-     *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
-     * @deprecated
-     */
-    public abstract long[][] getStatusList();
-    
-    /**
-     * Method returns List of Strings representing the status of the currently running and scheduled
-     * threads for a specific layer.
-     * 
-     * @return array of {@code [[tilesDone, tilesTotal, tilesRemaining, taskID, taskStatus],...]}
-     *         where {@code taskStatus} is one of:
-     *         {@code 0 = PENDING, 1 = RUNNING, 2 = DONE, -1 = ABORTED}
-     * @param layerName the name of the layer.  null for all layers.
-     * @return
-     * @deprecated
-     */
-    public abstract long[][] getStatusList(String layerName);
     
     /**
      * Get the status of currently running or scheduled Jobs.
