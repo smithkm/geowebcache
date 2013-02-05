@@ -2,40 +2,66 @@ package org.geowebcache.seed;
 
 import java.util.Iterator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.geowebcache.seed.GWCTask.STATE;
+
 public class JobUtils {
+    private static final Log log = LogFactory.getLog(GWCTask.class);
+    
     private JobUtils(){};
     
-    public static GWCTask.STATE combineState(Iterator<GWCTask.STATE> states) {
-
-        boolean allReadyUnset = true; // No tasks that aren't READY or UNSET have been seen
-        boolean running = false; // At least one running task has been seen
+    public static GWCTask.STATE combineState(Iterator<GWCTask.STATE> states, GWCTask.STATE currentState) {
+        boolean anyInitializing = false;
+        boolean anyRunning = false;
+        boolean anyStopped = false;
+        boolean anyReady = false;
         while(states.hasNext()){
             GWCTask.STATE s = states.next();
             switch(s){
-            case FAILED:
-                return GWCTask.STATE.FAILED; // TODO not sure this is right, maybe it should only be if all are DEAD.
-            case DONE:
-                allReadyUnset = false;
+            case INITIALIZING:
+                anyInitializing = true;
                 break;
+                
             case READY:
+                anyReady = true;
                 break;
+                
             case RUNNING:
-                allReadyUnset = false;
-                running = true;
+                anyRunning = true;
                 break;
-            default:
+            
+            case FAILED:
+            case DONE:
+            case ABORTED:
+                anyStopped = true;
                 break;
             }
+
         }
-        // None are dead, some are running, so the job is running
-        if(running) {
-            return GWCTask.STATE.RUNNING;
+        
+        if(anyInitializing && (anyRunning||anyStopped)) 
+            throw new IllegalStateException("If a Job has an initializing task, all should be initializing or ready.");
+        
+        if(anyInitializing) {
+            return STATE.INITIALIZING;
         }
-        // All are Ready/Unset
-        if(allReadyUnset) {
-            return GWCTask.STATE.READY;
+        
+        if(!(anyReady || anyRunning)){
+            if(currentState.isStopped()){
+                return currentState;
+            } else {
+                throw new IllegalStateException("Job should have been set to a stopped state when its last thread stopped.");
+            }
         }
-        // Some are Done, any others are Ready/Unset
-        return GWCTask.STATE.DONE;
+        if(anyRunning || (anyReady && currentState==STATE.RUNNING)){
+            return STATE.RUNNING;
+        }
+        
+        if(anyReady) {
+            return STATE.READY;
+        }
+        
+        throw new IllegalStateException("Unexpected task states for job, this should not happen.");
     }
 }

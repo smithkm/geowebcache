@@ -47,6 +47,8 @@ abstract class ThreadedJob implements Job {
     
     private final boolean doFilterUpdate;
     
+    private GWCTask.STATE state = STATE.INITIALIZING;
+    
     /**
      * 
      * @param id unique ID of the Job
@@ -272,7 +274,9 @@ abstract class ThreadedJob implements Job {
     
     public STATE getState() {
         Assert.state(threads.length>0, "Job should have at least one task.");
-        return JobUtils.combineState(new StateIterator());
+        
+        state =  JobUtils.combineState(new StateIterator(), state);
+        return state;
     }
     
     
