@@ -47,6 +47,7 @@ import org.geowebcache.rest.RestletException;
 import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.GWCTask.TYPE;
+import org.geowebcache.seed.JobNotFoundException;
 import org.geowebcache.seed.JobStatus;
 import org.geowebcache.seed.TaskStatus;
 import org.geowebcache.seed.threaded.ThreadedTileBreeder;
@@ -152,6 +153,8 @@ public class SeedFormRestlet extends GWCRestlet {
             handleDoGet(resp, tl, listAllTasks);
         } else if (form.getFirst("kill_thread") != null) {
             handleKillThreadPost(form, tl, resp);
+        } else if (form.getFirst("kill_job") != null) {
+            handleKillJobPost(form, tl, resp);
         } else if (form.getFirst("kill_all") != null) {
             handleKillAllThreadsPost(form, tl, resp);
         } else if (form.getFirst("minX") != null) {
@@ -659,6 +662,26 @@ public class SeedFormRestlet extends GWCRestlet {
                     + id
                     + " has not started yet, or it is a truncate task that cannot be interrutped.</li></ul>");
             ;
+        }
+
+        if (tl != null) {
+            doc.append("<p><a href=\"./" + tl.getName() + "\">Go back</a></p>\n");
+        }
+
+        resp.setEntity(doc.toString(), MediaType.TEXT_HTML);
+    }
+    
+    private void handleKillJobPost(Form form, TileLayer tl, Response resp) {
+        String id = form.getFirstValue("job_id");
+
+        StringBuilder doc = new StringBuilder();
+
+        makeHeader(doc);
+        try {
+            seeder.getJobByID(Long.parseLong(id)).terminate();
+            doc.append("<ul><li>Terminate signal sent to job " + id + ".</li></ul>");
+        }  catch (JobNotFoundException e) {
+            doc.append("<ul><li>Job " + id + " could not be found.</li></ul>");
         }
 
         if (tl != null) {
