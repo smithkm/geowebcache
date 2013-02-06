@@ -4,10 +4,15 @@ import static org.junit.Assert.*;
 import static org.easymock.classextension.EasyMock.*;
 import static org.hamcrest.Matchers.*;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+
 import org.geowebcache.layer.TileLayerDispatcher;
+import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.SeederThreadPoolExecutor;
 import org.geowebcache.seed.TileBreederTest;
 import org.geowebcache.storage.StorageBroker;
+import org.junit.After;
 import org.junit.Before;
 
 public class ThreadedTileBreederTest extends TileBreederTest {
@@ -28,8 +33,12 @@ public class ThreadedTileBreederTest extends TileBreederTest {
             initTld();
         } replay(tld);
         
+        Future<GWCTask> future = createMock(Future.class);
+        replay(future);
+        
         executor = createMock(SeederThreadPoolExecutor.class);{
             initExecutor();
+            expect(executor.submit((Callable<GWCTask>)anyObject())).andReturn(future);
         } replay(executor);
         
         broker = createMock(StorageBroker.class);{
@@ -40,5 +49,12 @@ public class ThreadedTileBreederTest extends TileBreederTest {
         breeder.setTileLayerDispatcher(tld);
         breeder.setStorageBroker(broker);
         breeder.setThreadPoolExecutor(executor);
+    }
+    
+    @After
+    public void tearDown() throws Exception {
+        verify(tld);
+        verify(executor);
+        verify(broker);
     }
 }

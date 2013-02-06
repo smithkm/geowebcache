@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.SynchronousQueue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -207,12 +209,10 @@ public abstract class TileBreeder {
     
         Job job = createJob(tr, tl, sr.getType(), sr.getThreadCount(),
                 sr.getFilterUpdate());
-    
-        dispatchJob(job);
     }
     
     /**
-     * Create tasks to manipulate the cache (Seed, truncate, etc)  They will still need to be dispatched.
+     * Create a Job to manipulate the cache (Seed, truncate, etc)
      * 
      * @param tr The range of tiles to work on.
      * @param type The type of task(s) to create
@@ -226,16 +226,17 @@ public abstract class TileBreeder {
 
         String layerName = tr.getLayerName();
         TileLayer tileLayer = layerDispatcher.getTileLayer(layerName);
-        return createJob(tr, tileLayer, type, threadCount, filterUpdate);
+        Job j = createJob(tr, tileLayer, type, threadCount, filterUpdate);
+        return j;
     }
     
-
+    
     /**
      * Dispatches a Job
      * 
      * @param job
      */
-    public abstract void dispatchJob(Job job);
+    protected abstract void dispatchJob(Job job);
     
     
     /**
@@ -382,7 +383,7 @@ public abstract class TileBreeder {
     }
 
     /**
-     * Create a job to manipulate the cache (Seed, truncate, etc).  In will still need to be dispatched.
+     * Create a job to manipulate the cache (Seed, truncate, etc) and start it running.
      * 
      * @param tr The range of tiles to work on.
      * @param tl The layer to work on.  Overrides any layer specified on tr.
@@ -393,30 +394,31 @@ public abstract class TileBreeder {
      * @throws GeoWebCacheException
      */
     public Job createJob(TileRange tr, TileLayer tl, GWCTask.TYPE type,
-            int threadCount, boolean filterUpdate) throws GeoWebCacheException {
-            
-                if (type == GWCTask.TYPE.TRUNCATE || threadCount < 1) {
-                    log.trace("Forcing thread count to 1");
-                    threadCount = 1;
-                }
-                TileRangeIterator trIter = tr.iterator(tl.getMetaTilingFactors());
-                Job job;
-                switch (type) {
-                case TRUNCATE:
-                    job = createTruncateJob(trIter, tl, filterUpdate);
-                    break;
-                case SEED:
-                    job = createSeedJob(threadCount, false, trIter, tl, filterUpdate);
-                    break;
-                case RESEED:
-                    job = createSeedJob(threadCount, true, trIter, tl, filterUpdate);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Only SEED, RESEED, and TRUNCATE job types can be created.");
-                }
-                jobs.put(job.getId(), job);
-                return job;
+        int threadCount, boolean filterUpdate) throws GeoWebCacheException {
+        
+            if (type == GWCTask.TYPE.TRUNCATE || threadCount < 1) {
+                log.trace("Forcing thread count to 1");
+                threadCount = 1;
             }
+            TileRangeIterator trIter = tr.iterator(tl.getMetaTilingFactors());
+            Job job;
+            switch (type) {
+            case TRUNCATE:
+                job = createTruncateJob(trIter, tl, filterUpdate);
+                break;
+            case SEED:
+                job = createSeedJob(threadCount, false, trIter, tl, filterUpdate);
+                break;
+            case RESEED:
+                job = createSeedJob(threadCount, true, trIter, tl, filterUpdate);
+                break;
+            default:
+                throw new IllegalArgumentException("Only SEED, RESEED, and TRUNCATE job types can be created.");
+            }
+            jobs.put(job.getId(), job);
+            dispatchJob(job);
+            return job;
+        }
 
     /**
      * Initializes the seed task failure control variables either with the provided environment

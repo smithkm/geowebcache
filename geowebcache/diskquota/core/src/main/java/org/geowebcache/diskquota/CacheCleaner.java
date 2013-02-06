@@ -30,6 +30,7 @@ import org.geowebcache.diskquota.storage.TileSet;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.seed.GWCTask;
+import org.geowebcache.seed.JobFailedException;
 import org.geowebcache.seed.TileBreeder;
 import org.geowebcache.seed.TruncateJob;
 import org.geowebcache.storage.TileRange;
@@ -230,12 +231,12 @@ public class CacheCleaner implements DisposableBean {
 
         // truncate synchronously. We're already inside the interested thread
         try {
-            job.runSynchronously();
+            job.waitForComplete();
             pageStore.setTruncated(tilePage);
         } catch (InterruptedException e) {
             log.debug("Truncate task interrupted");
             return;
-        } catch (GeoWebCacheException e) {
+        } catch (JobFailedException e) {
             throw new RuntimeException(e);
         }
     }

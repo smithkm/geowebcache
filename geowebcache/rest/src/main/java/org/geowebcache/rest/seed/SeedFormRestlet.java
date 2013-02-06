@@ -737,8 +737,6 @@ public class SeedFormRestlet extends GWCRestlet {
             throw new RestletException(e.getMessage(), Status.SERVER_ERROR_INTERNAL);
         }
 
-        seeder.dispatchJob(job);
-
         // Give the thread executor a chance to run
         try {
             Thread.sleep(500);

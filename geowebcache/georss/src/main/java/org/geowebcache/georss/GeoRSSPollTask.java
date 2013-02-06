@@ -274,7 +274,7 @@ class GeoRSSPollTask implements Runnable {
                     (Map<String, String>) null);
             try {
                 TruncateJob job = (TruncateJob) seeder.createJob(dtr, layer, GWCTask.TYPE.TRUNCATE, 1, false);
-                job.runSynchronously();
+                job.waitForComplete();
             } catch (GeoWebCacheException e) {
                 logger.error("Problem truncating based on GeoRSS feed: " + e.getMessage());
             } catch (InterruptedException e) {
@@ -300,13 +300,12 @@ class GeoRSSPollTask implements Runnable {
             Job job;
             try {
                 job = seeder.createJob(dtr, layer, GWCTask.TYPE.SEED, seedingThreads, false);
+                
+                // Save the handle so we can stop it
+                seedJobs.add(job);
             } catch (GeoWebCacheException e) {
                 throw (RuntimeException) new RuntimeException(e.getMessage()).initCause(e);
             }
-            seeder.dispatchJob(job);
-
-            // Save the handle so we can stop it
-            seedJobs.add(job);
 
         }
     }

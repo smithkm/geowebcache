@@ -97,4 +97,19 @@ public interface Job {
      * @return
      */
     public GWCTask.TYPE getType();
+    
+    /**
+     * Wait for the job to stop
+     * @return A JobStatus reporting the state of the job when it stopped.
+     * @throws InterruptedException if the waiting thread was interrupted
+     */
+    public JobStatus waitForStop() throws InterruptedException;
+    
+    /**
+     * Wait for the job to complete successfully
+     * @return A JobStatus reporting the state of the job when it stopped.
+     * @throws InterruptedException if the waiting thread was interrupted
+     * @throws InterruptedException if the waiting thread was interrupted
+     */
+    public JobStatus waitForComplete() throws InterruptedException, JobFailedException;
 }

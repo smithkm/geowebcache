@@ -15,6 +15,7 @@ import org.geowebcache.layer.TileLayer;
 import org.geowebcache.seed.GWCTask;
 import org.geowebcache.seed.GWCTask.STATE;
 import org.geowebcache.seed.Job;
+import org.geowebcache.seed.JobFailedException;
 import org.geowebcache.seed.JobStatus;
 import org.geowebcache.seed.JobUtils;
 import org.geowebcache.seed.TaskStatus;
@@ -155,6 +156,10 @@ abstract class ThreadedJob implements Job {
         log.info("Job "+id+" finished " /*+ parsedType*/ + " after "
                 + groupTotalTimeSecs + " seconds");
         
+        synchronized (this){
+            notifyAll();  // If any threads are waiting for this job to finish
+        }
+        
         ((ThreadedTileBreeder)breeder).jobDone(this);
     }
     
@@ -274,6 +279,21 @@ abstract class ThreadedJob implements Job {
         Assert.state(threads.length>0, "Job should have at least one task.");
         return JobUtils.combineState(new StateIterator());
     }
+
+    public synchronized JobStatus waitForStop() throws InterruptedException {
+        while(true){
+            if(getState().isStopped()){
+                return getStatus();
+            }
+            wait();
+        }
+    }
     
-    
+    public JobStatus waitForComplete() throws InterruptedException, JobFailedException {
+        JobStatus status = waitForStop();
+        if(getState()!=STATE.DONE){
+            throw new JobFailedException(getId(), getState());
+        }
+        return status;
+    }
 }

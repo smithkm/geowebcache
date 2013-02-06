@@ -7,5 +7,5 @@ public interface TruncateJob extends Job {
     /**
      * Run the job synchronously within the current thread.
      */
-    public void runSynchronously() throws GeoWebCacheException, InterruptedException;
+    //public void runSynchronously() throws GeoWebCacheException, InterruptedException;
 }
