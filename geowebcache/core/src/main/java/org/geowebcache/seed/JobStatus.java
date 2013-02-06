@@ -18,6 +18,7 @@ public class JobStatus implements Serializable{
     final private GWCTask.TYPE type;
     final private long tilesDone;
     final private long tilesTotal;
+    final private GWCTask.STATE state;
     
     /**
      * create a timestamped record of the given job.
@@ -25,7 +26,11 @@ public class JobStatus implements Serializable{
      */
     public JobStatus(Job job) {
         super();
+        
+        // FIXME requires iterating over the tasks twice.  Should try to optimise.
         this.taskStatuses = job.getTaskStatus();
+        this.state = job.getState();
+
         this.time = System.currentTimeMillis();
         this.jobId = job.getId();
         this.threadCount = job.getThreadCount();
@@ -73,4 +78,7 @@ public class JobStatus implements Serializable{
         return tilesTotal;
     }
     
+    public GWCTask.STATE getState() {
+        return state;
+    }
 }

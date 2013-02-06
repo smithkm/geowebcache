@@ -251,6 +251,7 @@ public void testGetStatus() throws Exception {
     Collection<TaskStatus> taskStatusCol = new ArrayList<TaskStatus>();
     taskStatusCol.add(createMock(TaskStatus.class));
     expect(task1.getStatus()).andReturn(taskStatusCol.iterator().next());
+    expect(task1.getState()).andStubReturn(STATE.RUNNING);
     replay(task1);
     replay(mockBreeder);
     

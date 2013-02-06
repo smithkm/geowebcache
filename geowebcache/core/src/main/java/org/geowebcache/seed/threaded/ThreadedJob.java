@@ -282,8 +282,9 @@ abstract class ThreadedJob implements Job {
 
     public synchronized JobStatus waitForStop() throws InterruptedException {
         while(true){
-            if(getState().isStopped()){
-                return getStatus();
+            JobStatus status = getStatus();
+            if(status.getState().isStopped()){
+                return status;
             }
             wait();
         }
@@ -291,7 +292,7 @@ abstract class ThreadedJob implements Job {
     
     public JobStatus waitForComplete() throws InterruptedException, JobFailedException {
         JobStatus status = waitForStop();
-        if(getState()!=STATE.DONE){
+        if(status.getState()!=STATE.DONE){
             throw new JobFailedException(getId(), getState());
         }
         return status;
