@@ -540,7 +540,7 @@ public class SeedFormRestlet extends GWCRestlet {
         int otherLayersJobCount = 0;
         if (!listAll) {
             for(JobStatus job: seeder.getJobStatusList()){
-                if(job.getLayerName().equals(layerName)){
+                if(!job.getLayerName().equals(layerName)){
                     otherLayersJobCount++;
                     otherLayersTaskCount+=job.getThreadCount();
                 }

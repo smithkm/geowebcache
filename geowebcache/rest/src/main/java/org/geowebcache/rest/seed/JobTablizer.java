@@ -9,6 +9,7 @@ import java.util.Locale;
 import org.apache.commons.lang.ArrayUtils;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.seed.GWCTask.STATE;
+import org.geowebcache.seed.GWCTask.TYPE;
 import org.geowebcache.seed.JobStatus;
 import org.geowebcache.seed.TaskStatus;
 
@@ -60,7 +61,7 @@ public class JobTablizer {
             return task.getState().toString();
         }
     };
-    protected final Column type  = new Column("type"){
+    protected final Column type  = new Column("Type"){
         @Override
         public String getField(JobStatus job, TaskStatus task) {
             return job.getType().toString();
@@ -99,6 +100,8 @@ public class JobTablizer {
     protected final Column kill  = new Column(null){
         @Override
         public String getField(JobStatus job, TaskStatus task) {
+            boolean killable = task.getState().isStopped();
+            killable |= job.getType()!=TYPE.TRUNCATE;
             String ret = "<form form id=\"kill\" action=\"./"
                     + tl.getName()
                     + "\" method=\"post\">"
@@ -107,7 +110,7 @@ public class JobTablizer {
                     + task.getTaskId()
                     + "\" />"
                     + "<span><input "
-                    +(task.getState().isStopped()?"disabled=\"disabled\"":"")
+                    + (killable ? "" : "disabled=\"disabled\"" )
                     +" style=\"padding: 0; margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Task\"></span>"
                     + "</form>";
             return ret;
@@ -187,6 +190,10 @@ public class JobTablizer {
         doc.append(Long.toString(job.getJobId()));
         doc.append("</th>");
         doc.append("<td>");
+        
+        boolean killable = job.getState().isStopped();
+        killable |= job.getType()!=TYPE.TRUNCATE;
+        
         doc.append("<form form id=\"kill\" action=\"./"
                 + tl.getName()
                 + "\" method=\"post\">"
@@ -194,7 +201,9 @@ public class JobTablizer {
                 + "<input type=\"hidden\" name=\"job_id\"  value=\""
                 + job.getJobId()
                 + "\" />"
-                + "<span><input style=\"padding: 0; margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Job\"></span>"
+                + "<span><input "
+                + (killable ? "" : "disabled=\"disabled\"" )
+                +"style=\"padding: 0; margin-bottom: -12px; border: 1;\" type=\"submit\" value=\"Kill Job\"></span>"
                 + "</form>");
         doc.append("</tr>\n");
     }
@@ -218,7 +227,7 @@ public class JobTablizer {
     }
 
     protected void empty() throws IOException {
-        doc.append("  <tbody><tr class=\"listEmpty\"><td colspan=\"*\">None</td></tr></tbody>\n");
+        doc.append("  <tbody><tr class=\"listEmpty\"><td colspan=\"").append(Integer.toString(getColumnCount()-1)).append("\">No running jobs</td></tr></tbody>\n");
     }
     
     public void table(Collection<JobStatus> jobs, String id, String caption) throws IOException {

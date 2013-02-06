@@ -396,9 +396,15 @@ public class ServletUtils {
     public static String gwcHtmlHeader(String pageTitle) {
         return "<head>\n" + "<title>" + pageTitle + "</title>" + "<style type=\"text/css\">\n"
                 + "body, td {\n"
-                + "font-family: Verdana,Arial,\'Bitstream Vera Sans\',Helvetica,sans-serif;\n"
+                + "font-family: sans-serif;\n"
                 + "font-size: 0.85em;\n" + "vertical-align: top;\n" + "}\n"
-                + "table.jobList tr.even {background-color: #DDD;}"+ "</style>\n"
+                + "table.jobList {border-collapse: collapse;}\n"
+                + "table.jobList tr.even {background-color: #DDD;}\n"
+                + "table.jobList>thead {border-bottom: 1px solid black;}\n"
+                + "table.jobList>thead>tr>th {padding-left:2ex; padding-right:2ex;font-size: smaller; vertical-align: bottom;}\n"
+                + "table.jobList>*>tr>* {padding-left:1ex; padding-right:1ex;}\n"
+                + "table.jobList tr.listEmpty {text-align: center; letter-spacing: 0.25ex; padding: 0.5em;}"
+                + "</style>\n"
                 + "</head>\n";
     }
 
