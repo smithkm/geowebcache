@@ -72,6 +72,8 @@ public class SeedFormRestlet extends GWCRestlet {
 
     private TileBreeder seeder;
     private TablizerFactory tablizerFactory;
+    protected int seedRedirectDelay = 3;
+
 
     public void handle(Request request, Response response) {
 
@@ -263,14 +265,11 @@ public class SeedFormRestlet extends GWCRestlet {
 
         StringBuilder doc = new StringBuilder();
 
-        makeHeader(doc);
+        makeHeader(doc, "./" + tl.getName(), seedRedirectDelay);
 
         doc.append("<h3>Task submitted</h3>\n");
 
-        doc.append("<p>Below you can find a list of currently executing tasks, take the numbers with a grain of salt");
-        doc.append(" until the task has had a chance to run for a few minutes. ");
-
-        makeTaskList(doc, tl, false);
+        doc.append("<p>You should be redirected back to the seeding form shortly. <a href=\"./" + tl.getName() + "\">Return to Seeding Form</a></p>\n");
 
         makeFooter(doc);
 
@@ -464,7 +463,15 @@ public class SeedFormRestlet extends GWCRestlet {
     }
 
     private void makeHeader(StringBuilder doc) {
-        doc.append("<html>\n" + ServletUtils.gwcHtmlHeader("GWC Seed Form") + "<body>\n"
+        makeHeader(doc, null, 0);
+    }
+
+    private void makeHeader(StringBuilder doc, String redirectUrl, int delay) {
+        String meta = "";
+        if(redirectUrl!=null){
+            meta = "<meta http-equiv=\"refresh\" CONTENT=\""+delay+";URL="+redirectUrl+"\" />";
+        }
+        doc.append("<html>\n" + ServletUtils.gwcHtmlHeader("GWC Seed Form", meta) + "<body>\n"
                 + ServletUtils.gwcHtmlLogoLink("../../"));
     }
 
@@ -489,7 +496,15 @@ public class SeedFormRestlet extends GWCRestlet {
         Collection<JobStatus> jobs = seeder.getJobStatusList();
         JobTablizer tablizer = tablizerFactory.getJobTablizer(doc, tl);
         try {
-            tablizer.table(jobs, null, "List of currently executing tasks");
+            tablizer.table(jobs, null, "List of currently executing jobs");
+        } catch (IOException e) {
+            throw new IllegalStateException("This should never happen as StringBuilder shouldn't throw IOException",e);
+        }
+        
+        jobs = seeder.recentStoppedJobs();
+        
+        try {
+            tablizer.table(jobs, null, "List of recently completed jobs");
         } catch (IOException e) {
             throw new IllegalStateException("This should never happen as StringBuilder shouldn't throw IOException",e);
         }
@@ -766,5 +781,10 @@ public class SeedFormRestlet extends GWCRestlet {
     public void setTablizerFactory(TablizerFactory tablizerFactory){
         this.tablizerFactory = tablizerFactory;
     }
+    
+    public void setSeedRedirectDelay(int seedRedirectDelay) {
+        this.seedRedirectDelay = seedRedirectDelay;
+    }
+
 
 }

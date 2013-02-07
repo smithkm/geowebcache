@@ -100,8 +100,8 @@ public class JobTablizer {
     protected final Column kill  = new Column(null){
         @Override
         public String getField(JobStatus job, TaskStatus task) {
-            boolean killable = task.getState().isStopped();
-            killable |= job.getType()!=TYPE.TRUNCATE;
+            boolean killable = task.getState()==STATE.RUNNING;
+            killable &= job.getType()!=TYPE.TRUNCATE;
             String ret = "<form form id=\"kill\" action=\"./"
                     + tl.getName()
                     + "\" method=\"post\">"
@@ -191,8 +191,8 @@ public class JobTablizer {
         doc.append("</th>");
         doc.append("<td>");
         
-        boolean killable = job.getState().isStopped();
-        killable |= job.getType()!=TYPE.TRUNCATE;
+        boolean killable = job.getState()==STATE.RUNNING;
+        killable &= job.getType()!=TYPE.TRUNCATE;
         
         doc.append("<form form id=\"kill\" action=\"./"
                 + tl.getName()
@@ -227,7 +227,7 @@ public class JobTablizer {
     }
 
     protected void empty() throws IOException {
-        doc.append("  <tbody><tr class=\"listEmpty\"><td colspan=\"").append(Integer.toString(getColumnCount()-1)).append("\">No running jobs</td></tr></tbody>\n");
+        doc.append("  <tbody><tr class=\"listEmpty\"><td colspan=\"").append(Integer.toString(getColumnCount()-1)).append("\">No jobs</td></tr></tbody>\n");
     }
     
     public void table(Collection<JobStatus> jobs, String id, String caption) throws IOException {

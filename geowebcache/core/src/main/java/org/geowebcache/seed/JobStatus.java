@@ -31,7 +31,6 @@ public class JobStatus implements Serializable{
         this.taskStatuses = job.getTaskStatus();
         this.state = job.getState();
 
-        this.time = System.currentTimeMillis();
         this.jobId = job.getId();
         this.threadCount = job.getThreadCount();
         this.layerName = job.getLayer().getName();
@@ -43,6 +42,9 @@ public class JobStatus implements Serializable{
             tilesDone += task.getTilesDone();
         }
         this.tilesDone = tilesDone;
+
+        // Do this last
+        this.time = System.currentTimeMillis();
     }
     
     

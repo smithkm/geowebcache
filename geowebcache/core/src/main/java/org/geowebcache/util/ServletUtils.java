@@ -392,19 +392,24 @@ public class ServletUtils {
 
         return decodedValues;
     }
-
+    
     public static String gwcHtmlHeader(String pageTitle) {
+        return gwcHtmlHeader(pageTitle, null);
+    }
+
+    public static String gwcHtmlHeader(String pageTitle, String extraStuff) {
         return "<head>\n" + "<title>" + pageTitle + "</title>" + "<style type=\"text/css\">\n"
                 + "body, td {\n"
                 + "font-family: sans-serif;\n"
                 + "font-size: 0.85em;\n" + "vertical-align: top;\n" + "}\n"
-                + "table.jobList {border-collapse: collapse;}\n"
+                + "table.jobList {border-collapse: collapse; margin-top:1.5em;}\n"
                 + "table.jobList tr.even {background-color: #DDD;}\n"
                 + "table.jobList>thead {border-bottom: 1px solid black;}\n"
                 + "table.jobList>thead>tr>th {padding-left:2ex; padding-right:2ex;font-size: smaller; vertical-align: bottom;}\n"
                 + "table.jobList>*>tr>* {padding-left:1ex; padding-right:1ex;}\n"
-                + "table.jobList tr.listEmpty {text-align: center; letter-spacing: 0.25ex; padding: 0.5em;}"
+                + "table.jobList tr.listEmpty {text-align: center; letter-spacing: 0.25ex; padding: 0.5em; color: #666666;}"
                 + "</style>\n"
+                + ((extraStuff!=null)?extraStuff:"")
                 + "</head>\n";
     }
 

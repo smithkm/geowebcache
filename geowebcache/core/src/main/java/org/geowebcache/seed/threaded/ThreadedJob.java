@@ -251,8 +251,19 @@ abstract class ThreadedJob implements Job {
      * Returns the current status of the job.  Does not do any locking.
      */
     public JobStatus getStatus() {
-        return new JobStatus(this);
+        cachedStatus = new JobStatus(this);
+        return cachedStatus;
     }
+    
+    private JobStatus cachedStatus;
+    public JobStatus getStatus(long maxAge) {
+        if(cachedStatus==null || cachedStatus.getTime()+maxAge<System.currentTimeMillis()){
+            return getStatus();
+        } else {
+            return cachedStatus;
+        }
+    }
+    
     
     /**
      * Iterates over the tasks and returns their states.

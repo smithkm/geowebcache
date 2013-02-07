@@ -81,6 +81,14 @@ public interface Job {
     public JobStatus getStatus();
     
     /**
+     * Get a report of the status of the job
+     * @param maxAge Age in milliseconds.  If the status has been generated within this time, use it
+     * rather than generating again.
+     * @return
+     */
+    public JobStatus getStatus(long maxAge);
+    
+    /**
      * Get a report of the status of each task in the job
      * @return
      */

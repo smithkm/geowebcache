@@ -124,6 +124,8 @@ public abstract class TileBreeder {
     
     public static Log log = LogFactory.getLog(ThreadedTileBreeder.class);
 
+    private StatusLog stoppedJobLog = new StatusLog(1000*60*10);
+    
     /**
      * Find the tile range for a Seed Request.
      * @param req
@@ -483,5 +485,10 @@ public abstract class TileBreeder {
     protected void jobDone(Job job) {
         Assert.isTrue(job.getBreeder()==this, "Job was not created by this breeder.");
         jobs.remove(job.getId());
+        stoppedJobLog.add(job.getStatus());
+    }
+    
+    public List<JobStatus> recentStoppedJobs(){
+        return stoppedJobLog.getLog();
     }
 }
