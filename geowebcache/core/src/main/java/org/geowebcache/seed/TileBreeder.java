@@ -124,7 +124,7 @@ public abstract class TileBreeder {
     
     public static Log log = LogFactory.getLog(ThreadedTileBreeder.class);
 
-    private StatusLog stoppedJobLog = new StatusLog(1000*60*10);
+    protected StatusLog stoppedJobLog = new StatusLog(1000*60*10);
     
     /**
      * Find the tile range for a Seed Request.
