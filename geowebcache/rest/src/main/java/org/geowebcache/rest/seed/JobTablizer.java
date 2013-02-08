@@ -100,8 +100,8 @@ public class JobTablizer {
     protected final Column kill  = new Column(null){
         @Override
         public String getField(JobStatus job, TaskStatus task) {
-            boolean killable = task.getState().isStopped();
-            killable |= job.getType()!=TYPE.TRUNCATE;
+            boolean killable = !task.getState().isStopped();
+            killable &= job.getType()!=TYPE.TRUNCATE;
             String ret = "<form form id=\"kill\" action=\"./"
                     + tl.getName()
                     + "\" method=\"post\">"
@@ -191,8 +191,8 @@ public class JobTablizer {
         doc.append("</th>");
         doc.append("<td>");
         
-        boolean killable = job.getState().isStopped();
-        killable |= job.getType()!=TYPE.TRUNCATE;
+        boolean killable = !job.getState().isStopped();
+        killable &= job.getType()!=TYPE.TRUNCATE;
         
         doc.append("<form form id=\"kill\" action=\"./"
                 + tl.getName()
