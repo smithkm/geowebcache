@@ -9,7 +9,7 @@ public class GridUtil {
      * @param crsMatchingGridSubsets
      * @param expectedTileWidth
      * @param expectedTileHeight
-     * @param matchingTileIndexTarget
+     * @param matchingTileIndexTarget 3 element array to be filled with the grid location best matching the specified box.
      * @return null if none matches, the gridset with a tile index closest to the requested bounds
      *         and dimensions otherwise
      */

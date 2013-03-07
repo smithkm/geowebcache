@@ -207,11 +207,13 @@ public class WMSService extends Service {
         }
         
         if (fullWMS) {
+            // Try to fuse tiles for FullWMS
             ConveyorTile fullWMSTile = fullWMSTile(tileIndexTarget, gridSubset,
                     bbox, tileWidth, tileHeight, layers, request, response, sb, false);
             if (fullWMSTile != null) {
                 return fullWMSTile;
             }
+            // Couldn't manage a FullWMS fused tile, so return to normal flow. 
         }
 
         long[] tileIndex = tileIndexTarget == null ? gridSubset.closestIndex(bbox)
@@ -223,6 +225,20 @@ public class WMSService extends Service {
                 fullParameters, request, response);
     }
 
+    /**
+     * Create a Conveyor to attempt to fulfil a non-tiled WMS request.
+     * @param tileIndexTarget The indices of the best matching tile
+     * @param gridSubset The best matching gridset
+     * @param bbox The bounding box requested
+     * @param tileWidth 
+     * @param tileHeight
+     * @param layers
+     * @param request
+     * @param response
+     * @param sb
+     * @param full // TODO What does this do?
+     * @return
+     */
     public static ConveyorTile fullWMSTile(long[] tileIndexTarget, GridSubset gridSubset,
             BoundingBox bbox, Integer tileWidth, Integer tileHeight, String layers,
             HttpServletRequest request, HttpServletResponse response, StorageBroker sb, boolean full
