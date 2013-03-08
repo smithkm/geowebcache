@@ -17,9 +17,12 @@
 package org.geowebcache.filter.parameters;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.google.common.base.Preconditions;
 
 /**
  * Filter to select the closest floating point value within a threshold.
@@ -27,6 +30,8 @@ import java.util.List;
 public class FloatParameterFilter extends ParameterFilter {
 
     private static final long serialVersionUID = 4186888723396139208L;
+    
+    private static Float DEFAULT = Float.valueOf(1E-6f);
 
     // These members get set by XStream
     private List<Float> values;
@@ -35,15 +40,19 @@ public class FloatParameterFilter extends ParameterFilter {
 
 
     public FloatParameterFilter() {
-        readResolve();
+        values = Collections.emptyList();
     }
 
-    private FloatParameterFilter readResolve() {
+    protected FloatParameterFilter readResolve() {
+        super.readResolve();
         if (values == null) {
-            values = new ArrayList<Float>(2);
+            values = Collections.emptyList();
         }
         if (threshold == null) {
-            threshold = Float.valueOf(1E-6f);
+            threshold = DEFAULT;
+        }
+        for(Float value: values) {
+            Preconditions.checkNotNull(value, "Value list included a null pointer.");
         }
         return this;
     }
@@ -52,13 +61,18 @@ public class FloatParameterFilter extends ParameterFilter {
      * @return the values
      */
     public List<Float> getValues() {
-        return values;
+        return Collections.unmodifiableList(values);
     }
     /**
      *  Set the values
      */
     public void setValues(List<Float> values) {
-        this.values = values;
+        Preconditions.checkNotNull(values);
+        for(Float f: values) {
+            Preconditions.checkNotNull(f);
+        }
+        
+        this.values = new ArrayList<Float>(values);
     }
 
     /**
@@ -73,13 +87,14 @@ public class FloatParameterFilter extends ParameterFilter {
      *            the threshold to set
      */
     public void setThreshold(Float threshold) {
+        if(threshold==null) threshold = DEFAULT;
         this.threshold = threshold;
     }
 
     @Override
     public String apply(String str) throws ParameterException {
         if (str == null || str.length() == 0) {
-            return "";
+            return getDefaultValue();
         }
 
         float val = Float.parseFloat(str);
@@ -132,6 +147,7 @@ public class FloatParameterFilter extends ParameterFilter {
         if (values != null) {
             clone.values = new ArrayList<Float>(values);
         }
+        clone.setThreshold(this.threshold);
         return clone;
     }
 }

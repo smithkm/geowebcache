@@ -17,8 +17,11 @@
 package org.geowebcache.filter.parameters;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
+import com.google.common.base.Preconditions;
 
 public class StringParameterFilter extends ParameterFilter {
 
@@ -27,12 +30,16 @@ public class StringParameterFilter extends ParameterFilter {
     private List<String> values;
 
     public StringParameterFilter() {
-        readResolve();
+        values = Collections.emptyList();
     }
 
-    private StringParameterFilter readResolve() {
+    protected StringParameterFilter readResolve() {
+        super.readResolve();
         if (values == null) {
-            values = new ArrayList<String>(2);
+            values = Collections.emptyList();
+        }
+        for(String value: values) {
+            Preconditions.checkNotNull(value, "Value list included a null pointer.");
         }
         return this;
     }
@@ -40,7 +47,7 @@ public class StringParameterFilter extends ParameterFilter {
     @Override
     public String apply(String str) throws ParameterException {
         if (str == null || str.length() == 0) {
-            return "";
+            return getDefaultValue();
         }
 
         Iterator<String> iter = values.iterator();
@@ -57,19 +64,23 @@ public class StringParameterFilter extends ParameterFilter {
      * @return the values the parameter can take
      */
     public List<String> getValues() {
-        return values;
+        return Collections.unmodifiableList(values);
     }
 
     /**
      * Set the values the parameter can take
      */
     public void setValues(List<String> values) {
-        this.values = values;
+        Preconditions.checkNotNull(values);
+        for(String value: values) {
+            Preconditions.checkNotNull(value, "Value list included a null pointer.");
+        }
+        this.values = new ArrayList<String>(values);
     }
 
     @Override
     public List<String> getLegalValues() {
-        return values;
+        return getValues();
     }
 
     /**
