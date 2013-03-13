@@ -80,8 +80,6 @@ public class GeoWebCacheConfiguration {
      */
     private List<TileLayer> layers;
 
-    private Boolean enableFullWMS;
-
     /**
      * Default constructor
      */
