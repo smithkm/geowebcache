@@ -456,7 +456,7 @@ public class FileBlobStore implements BlobStore {
         }
     }
 
-    private File getFileHandleTile(TileObject stObj, boolean create) throws StorageException {
+    protected File getFileHandleTile(TileObject stObj, boolean create) throws StorageException {
         final MimeType mimeType;
         try {
             mimeType = MimeType.createFromFormat(stObj.getBlobFormat());
@@ -475,14 +475,14 @@ public class FileBlobStore implements BlobStore {
         return tilePath;
     }
 
-    private Resource readFile(File fh) throws StorageException {
+    protected Resource readFile(File fh) throws StorageException {
         if (!fh.exists()) {
             return null;
         }
         return new FileResource(fh);
     }
 
-    private void writeFile(File target, TileObject stObj, boolean existed) throws StorageException {
+    protected void writeFile(File target, TileObject stObj, boolean existed) throws StorageException {
         // first write to temp file
         tmp.mkdirs();
         File temp = new File(tmp, UUID.randomUUID().toString());

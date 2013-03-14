@@ -70,7 +70,7 @@
   	<constructor-arg ref="gwcAppCtx" />
   </bean>
 
-  <bean id="gwcBlobStore" class="org.geowebcache.storage.blobstore.file.FileBlobStore" destroy-method="destroy">
+  <bean id="gwcBlobStore" class="org.geowebcache.storage.blobstore.file.DummyBlobStore" destroy-method="destroy">
     <constructor-arg ref="gwcDefaultStorageFinder" />
   </bean>
   
