@@ -638,5 +638,12 @@ public abstract class TileLayer {
             }
         }
     }
+    /**
+     * Request the specified tile.  The result is not cached.
+     * @param tile The tile to request.  Is not modified.
+     * @return The tile resource
+     * @throws GeoWebCacheException
+     */
+    abstract public Resource getResourceForTile(ConveyorTile tile) throws GeoWebCacheException;
 
 }

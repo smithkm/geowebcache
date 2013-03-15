@@ -734,6 +734,18 @@ public class WMSLayer extends AbstractTileLayer {
 
         return tile;
     }
+    
+    /**
+     * Request the specified tile.
+     * @param tile The tile to request.  Is not modified.
+     * @return The tile resource
+     * @throws GeoWebCacheException
+     */
+    public Resource getResourceForTile(ConveyorTile tile) throws GeoWebCacheException {
+        Resource buffer = new ByteArrayResource(2048);
+        sourceHelper.makeRequest(tile, buffer);
+        return buffer;
+    }
 
     public String backendSRSOverride(SRS srs) {
         if (sphericalMercatorOverride != null && srs.equals(SRS.getEPSG3857())) {

@@ -363,4 +363,18 @@ public class ArcGISCacheLayer extends AbstractTileLayer {
         return;
     }
 
+    @Override
+    public Resource getResourceForTile(ConveyorTile tile)
+            throws GeoWebCacheException {
+
+        String path = getTilePath(tile);
+        File tileFile = new File(path);
+
+        if (tileFile.exists()) {
+            return readFile(tileFile);
+        } else {
+            return null;
+        }
+    }
+
 }

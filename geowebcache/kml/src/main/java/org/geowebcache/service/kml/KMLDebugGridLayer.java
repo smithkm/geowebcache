@@ -30,6 +30,7 @@ import org.geowebcache.grid.GridSubset;
 import org.geowebcache.grid.GridSubsetFactory;
 import org.geowebcache.grid.SRS;
 import org.geowebcache.io.ByteArrayResource;
+import org.geowebcache.io.Resource;
 import org.geowebcache.layer.AbstractTileLayer;
 import org.geowebcache.layer.BadTileException;
 import org.geowebcache.layer.TileLayer;
@@ -106,6 +107,14 @@ public class KMLDebugGridLayer extends AbstractTileLayer {
     }
 
     public ConveyorTile getTile(ConveyorTile tile) throws GeoWebCacheException, IOException {
+        tile.setBlob(getResourceForTile(tile));
+        tile.setStatus(200);
+        return tile;
+    }
+
+    @Override
+    public Resource getResourceForTile(ConveyorTile tile)
+            throws GeoWebCacheException {
         long[] gridLoc = tile.getTileIndex();
 
         BoundingBox bbox = tile.getGridSubset().boundsFromIndex(gridLoc);
@@ -155,12 +164,10 @@ public class KMLDebugGridLayer extends AbstractTileLayer {
                 + "</LinearRing></outerBoundaryIs></Polygon>\n"
                 + "</MultiGeometry>\n"
                 + "</Placemark>\n" + "</Document>\n" + "</kml>";
-
-        tile.setBlob(new ByteArrayResource(data.getBytes()));
-        tile.setStatus(200);
-        return tile;
+        
+        return new ByteArrayResource(data.getBytes());
     }
-
+    
     public String getStyles() {
         return null;
     }
