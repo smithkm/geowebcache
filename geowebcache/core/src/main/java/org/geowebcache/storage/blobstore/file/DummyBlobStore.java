@@ -3,15 +3,25 @@ package org.geowebcache.storage.blobstore.file;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheDispatcher;
 import org.geowebcache.config.ConfigurationException;
+import org.geowebcache.conveyor.ConveyorTile;
 import org.geowebcache.filter.request.GreenTileException;
 import org.geowebcache.io.ByteArrayResource;
+import org.geowebcache.io.LayerDelegatingResource;
 import org.geowebcache.io.Resource;
+import org.geowebcache.mime.ImageMime;
+import org.geowebcache.mime.MimeException;
+import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.DefaultStorageFinder;
+import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.StorageException;
 import org.geowebcache.storage.StorageObject.Status;
 import org.geowebcache.storage.TileObject;
@@ -37,7 +47,9 @@ public class DummyBlobStore extends FileBlobStore {
             stObj.setStatus(Status.MISS);
             return false;
         } else {
-            Resource resource = getBlankTile(); // Use a blank tile rather than the file contents
+//            Resource resource = getBlankTile(); // Use a blank tile rather than the file contents
+            ConveyorTile conv = fakeConveyor(stObj);
+            Resource resource = new LayerDelegatingResource(conv, fh.lastModified());
             stObj.setBlob(resource);
             stObj.setCreated(fh.lastModified()); // Use the modification time from the empty file
             stObj.setBlobSize((int) resource.getSize());
@@ -84,5 +96,15 @@ public class DummyBlobStore extends FileBlobStore {
         
        return null;
     }
-
+    
+    
+    private ConveyorTile fakeConveyor(TileObject stObj){
+        try {
+        return new ConveyorTile((StorageBroker)null, stObj.getLayerName(), stObj.getGridSetId(), 
+                stObj.getXYZ(), MimeType.createFromFormat(stObj.getBlobFormat()), 
+                (Map<String, String>)null, (HttpServletRequest)null, (HttpServletResponse)null);
+        } catch (MimeException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
 }
