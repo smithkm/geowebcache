@@ -31,7 +31,7 @@ public class FloatParameterFilter extends ParameterFilter {
 
     private static final long serialVersionUID = 4186888723396139208L;
     
-    private static Float DEFAULT = Float.valueOf(1E-6f);
+    private static Float DEFAULT_THRESHOLD = Float.valueOf(1E-6f);
 
     // These members get set by XStream
     private List<Float> values;
@@ -40,6 +40,7 @@ public class FloatParameterFilter extends ParameterFilter {
 
 
     public FloatParameterFilter() {
+        super();
         values = Collections.emptyList();
     }
 
@@ -49,7 +50,7 @@ public class FloatParameterFilter extends ParameterFilter {
             values = Collections.emptyList();
         }
         if (threshold == null) {
-            threshold = DEFAULT;
+            threshold = DEFAULT_THRESHOLD;
         }
         for(Float value: values) {
             Preconditions.checkNotNull(value, "Value list included a null pointer.");
@@ -87,7 +88,7 @@ public class FloatParameterFilter extends ParameterFilter {
      *            the threshold to set
      */
     public void setThreshold(Float threshold) {
-        if(threshold==null) threshold = DEFAULT;
+        if(threshold==null) threshold = DEFAULT_THRESHOLD;
         this.threshold = threshold;
     }
 

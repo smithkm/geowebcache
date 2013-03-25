@@ -38,7 +38,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
 
     private String key;
 
-    private String defaultValue;
+    private String defaultValue = "";
 
     /**
      * For XStream
