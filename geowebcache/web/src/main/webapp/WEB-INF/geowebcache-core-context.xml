@@ -72,6 +72,7 @@
 
   <bean id="gwcBlobStore" class="org.geowebcache.storage.blobstore.file.DummyBlobStore" destroy-method="destroy">
     <constructor-arg ref="gwcDefaultStorageFinder" />
+    <property name="catalogue" ref="gwcXmlConfig" />
   </bean>
   
   <!-- Static definition of where to put the blobstore. 

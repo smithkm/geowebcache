@@ -11,12 +11,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheDispatcher;
+import org.geowebcache.config.Configuration;
 import org.geowebcache.config.ConfigurationException;
 import org.geowebcache.conveyor.ConveyorTile;
 import org.geowebcache.filter.request.GreenTileException;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.LayerDelegatingResource;
 import org.geowebcache.io.Resource;
+import org.geowebcache.layer.TileLayer;
 import org.geowebcache.mime.ImageMime;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
@@ -30,6 +32,8 @@ public class DummyBlobStore extends FileBlobStore {
     private static Log log = LogFactory
     .getLog(org.geowebcache.storage.blobstore.file.DummyBlobStore.class);
 
+    private Configuration catalogue;
+    
     public DummyBlobStore(DefaultStorageFinder defStoreFinder)
             throws StorageException, ConfigurationException {
         super(defStoreFinder);
@@ -100,11 +104,24 @@ public class DummyBlobStore extends FileBlobStore {
     
     private ConveyorTile fakeConveyor(TileObject stObj){
         try {
-        return new ConveyorTile((StorageBroker)null, stObj.getLayerName(), stObj.getGridSetId(), 
+            TileLayer layer = catalogue.getTileLayer(stObj.getLayerName());
+            ConveyorTile conv = new ConveyorTile((StorageBroker)null, layer.getId(), stObj.getGridSetId(), 
                 stObj.getXYZ(), MimeType.createFromFormat(stObj.getBlobFormat()), 
-                (Map<String, String>)null, (HttpServletRequest)null, (HttpServletResponse)null);
+                stObj.getParameters(), (HttpServletRequest)null, (HttpServletResponse)null);
+            
+            conv.setTileLayer(layer);
+            
+            return conv;
         } catch (MimeException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    public Configuration getCatalogue() {
+        return catalogue;
+    }
+
+    public void setCatalogue(Configuration catalogue) {
+        this.catalogue = catalogue;
     }
 }
