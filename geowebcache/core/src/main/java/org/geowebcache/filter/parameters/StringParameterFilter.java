@@ -21,8 +21,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import com.google.common.base.Preconditions;
 
+@ParametersAreNonnullByDefault
 public class StringParameterFilter extends ParameterFilter {
 
     private static final long serialVersionUID = 7383381085250203901L;
@@ -45,7 +49,7 @@ public class StringParameterFilter extends ParameterFilter {
     }
 
     @Override
-    public String apply(String str) throws ParameterException {
+    public String apply(@Nullable String str) throws ParameterException {
         if (str == null || str.length() == 0) {
             return getDefaultValue();
         }
@@ -79,7 +83,7 @@ public class StringParameterFilter extends ParameterFilter {
     }
 
     @Override
-    public List<String> getLegalValues() {
+    public @Nullable List<String> getLegalValues() {
         return getValues();
     }
 
@@ -92,7 +96,7 @@ public class StringParameterFilter extends ParameterFilter {
      *         {@code false} otherwise
      */
     @Override
-    public boolean applies(String parameterValue) {
+    public boolean applies(@Nullable String parameterValue) {
         return getLegalValues().contains(parameterValue);
     }
 

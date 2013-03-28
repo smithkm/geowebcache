@@ -19,7 +19,7 @@ package org.geowebcache.filter.parameters;
 import java.io.Serializable;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -32,6 +32,7 @@ import com.google.common.base.Preconditions;
  * A filter for a WMS parameter that ensure that it fits within a finite set of defined values.
  *
  */
+@ParametersAreNonnullByDefault
 public abstract class ParameterFilter implements Serializable, Cloneable {
 
     private static final long serialVersionUID = -531248230951783132L;
@@ -51,7 +52,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @param key
      * @param defaultValue
      */
-    public ParameterFilter(@Nonnull String key, String defaultValue) {
+    public ParameterFilter(String key, @Nullable String defaultValue) {
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(!key.isEmpty(), "Parameter key must not be empty.");
         this.key = key;
@@ -62,7 +63,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @param key
      * @param defaultValue
      */
-    public ParameterFilter(@Nonnull String key) {
+    public ParameterFilter(String key) {
         this(key, "");
     }
     
@@ -70,7 +71,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * Get the key of the parameter to filter.
      * @return
      */
-    public @Nonnull String getKey() {
+    public String getKey() {
         return key;
     }
 
@@ -78,7 +79,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * Get the default value to use if the parameter is not specified.
      * @return
      */
-    public @Nonnull String getDefaultValue() {
+    public String getDefaultValue() {
         if(defaultValue==null) return "";
         return defaultValue;
     }
@@ -97,7 +98,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @return {@code true} if {@code parameterValue} is valid according to this filter,
      *         {@code false} otherwise
      */
-    public boolean applies(String parameterValue) {
+    public boolean applies(@Nullable String parameterValue) {
         try {
             apply(parameterValue);
         } catch (ParameterException e) {
@@ -113,7 +114,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @throws ParameterException if the parameter value could not be reduced to one of the
      *          legal values.
      */
-    public abstract @Nonnull String apply(@Nullable String str) throws ParameterException;
+    public abstract String apply(@Nullable String str) throws ParameterException;
 
     /**
      * @return null if the legal values cannot be enumerated
@@ -126,7 +127,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @param key
      *            the key to set
      */
-    public void setKey(@Nonnull String key) {
+    public void setKey(String key) {
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(!key.isEmpty(), "ParameterFilter key must be non-empty");
         Preconditions.checkState(this.key==null, "The key for this ParameterFilter has already been set");
@@ -137,7 +138,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @param defaultValue
      *            the defaultValue to set
      */
-    public void setDefaultValue(String defaultValue) {
+    public void setDefaultValue(@Nullable String defaultValue) {
         if(defaultValue==null) defaultValue ="";
         this.defaultValue = defaultValue;
     }

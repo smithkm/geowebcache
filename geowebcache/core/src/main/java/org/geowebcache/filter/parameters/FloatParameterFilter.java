@@ -22,11 +22,15 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import com.google.common.base.Preconditions;
 
 /**
  * Filter to select the closest floating point value within a threshold.
  */
+@ParametersAreNonnullByDefault
 public class FloatParameterFilter extends ParameterFilter {
 
     private static final long serialVersionUID = 4186888723396139208L;
@@ -87,13 +91,13 @@ public class FloatParameterFilter extends ParameterFilter {
      * @param threshold
      *            the threshold to set
      */
-    public void setThreshold(Float threshold) {
+    public void setThreshold(@Nullable Float threshold) {
         if(threshold==null) threshold = DEFAULT_THRESHOLD;
         this.threshold = threshold;
     }
 
     @Override
-    public String apply(String str) throws ParameterException {
+    public String apply(@Nullable String str) throws ParameterException {
         if (str == null || str.length() == 0) {
             return getDefaultValue();
         }
@@ -129,7 +133,7 @@ public class FloatParameterFilter extends ParameterFilter {
     }
 
     @Override
-    public List<String> getLegalValues() {
+    public @Nullable List<String> getLegalValues() {
         List<String> ret = new LinkedList<String>();
 
         Iterator<Float> iter = getValues().iterator();
