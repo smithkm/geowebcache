@@ -456,19 +456,45 @@ public class XMLConfiguration implements Configuration {
         log.debug("Config backup done");
     }
 
+    /**
+     * Configure an XStream instance
+     * @param xs The XStream instance to configure
+     * @return the configured XStream instance
+     */
     public XStream getConfiguredXStream(XStream xs) {
         return getConfiguredXStream(xs, this.context, null);
     }
-    public static XStream getConfiguredXStream(XStream xs, WebApplicationContext context) {
-        return getConfiguredXStream(xs, context, null);
+    
+    /**
+     * Configure an XStream instance
+     * @param xs The XStream instance to configure
+     * @param applicationContext The application context
+     * @return the configured XStream instance
+     */
+    public static XStream getConfiguredXStream(XStream xs, WebApplicationContext applicationContext) {
+        return getConfiguredXStream(xs, applicationContext, null);
     }
+
+    /**
+     * Configure an XStream instance
+     * @param xs The XStream instance to configure
+     * @param serializationContext The context of the serialization/deserialization to be done
+     * @return the configured XStream instance
+     */
     public XStream getConfiguredXStream(XStream xs, 
-            ContextualConfigurationProvider.Context providerContext) {
-        return getConfiguredXStream(xs, this.context, providerContext);
+            ContextualConfigurationProvider.Context serializationContext) {
+        return getConfiguredXStream(xs, this.context, serializationContext);
     }
     
-    public static XStream getConfiguredXStream(XStream xs, WebApplicationContext context, 
-            ContextualConfigurationProvider.Context providerContext) {
+    /**
+     * Configure an XStream instance
+     * @param xs The XStream instance to configure
+     * @param applicationContext The application context
+     * @param serializationContext The context of the serialization/deserialization to be done
+     * @return the configured XStream instance
+     */
+    public static XStream getConfiguredXStream(XStream xs, WebApplicationContext applicationContext, 
+            ContextualConfigurationProvider.Context serializationContext) {
         // XStream xs = xstream;
         xs.setMode(XStream.NO_REFERENCES);
 
@@ -519,19 +545,19 @@ public class XMLConfiguration implements Configuration {
         xs.alias("serviceInformation", ServiceInformation.class);
         xs.alias("contactInformation", ContactInformation.class);
 
-        if (context != null) {
+        if (applicationContext != null) {
             /*
              * Look up XMLConfigurationProvider extension points and let them contribute to the
              * configuration
              */
             List<XMLConfigurationProvider> configExtensions = GeoWebCacheExtensions.extensions(
-                    XMLConfigurationProvider.class, context);
+                    XMLConfigurationProvider.class, applicationContext);
             for (XMLConfigurationProvider extension : configExtensions) {
                 // Check if the provider is context dependent
                 if(extension instanceof ContextualConfigurationProvider &&
                         // Check if the context is applicable for the provider
-                        (providerContext==null ||
-                        !((ContextualConfigurationProvider)extension).appliesTo(providerContext))) {
+                        (serializationContext==null ||
+                        !((ContextualConfigurationProvider)extension).appliesTo(serializationContext))) {
                             // If so, try the next one
                             continue;
                     }

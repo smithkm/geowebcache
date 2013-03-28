@@ -1,7 +1,8 @@
 package org.geowebcache.config;
 
 /**
- * An XMLConfigurationProvider that can restrict itself to certain contexts
+ * An XMLConfigurationProvider that applies only when the serialization occurs in a particular
+ * context
  * 
  * @author Kevin Smith, OpenGeo
  *
@@ -10,17 +11,17 @@ public interface ContextualConfigurationProvider extends
         XMLConfigurationProvider {
 
     /**
-     * The contexts a provider can apply to
+     * The contexts within which serialization can occur.
      *
      */
     static public enum Context {
         /**
-         * Persistence to storage
+         * Serialization is for persistence of configuration to storage
          */
         PERSIST,
         
         /**
-         * Over the REST API
+         * Serialization is for use as the over the wire format for REST
          */
         REST
     }
