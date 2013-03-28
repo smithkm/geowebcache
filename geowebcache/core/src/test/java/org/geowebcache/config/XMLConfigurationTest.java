@@ -20,7 +20,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.easymock.classextension.EasyMock;
 import org.geowebcache.GeoWebCacheException;
+import org.geowebcache.config.ContextualConfigurationProvider.Context;
 import org.geowebcache.filter.parameters.ParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
 import org.geowebcache.grid.BoundingBox;
@@ -32,7 +34,11 @@ import org.geowebcache.grid.GridSubsetFactory;
 import org.geowebcache.grid.SRS;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.wms.WMSLayer;
+import org.junit.Test;
+import org.springframework.web.context.WebApplicationContext;
 import org.xml.sax.SAXParseException;
+
+import com.thoughtworks.xstream.XStream;
 
 public class XMLConfigurationTest extends TestCase {
 
@@ -249,5 +255,74 @@ public class XMLConfigurationTest extends TestCase {
         config.initialize(gridSetBroker);
         final String savedVersion = config.getVersion();
         assertEquals(currVersion, savedVersion);
+    }
+    
+    @Test
+    public void testXMLConfigurationWithContext() throws Exception {
+        XStream xs = EasyMock.createNiceMock(XStream.class);
+        EasyMock.replay(xs);
+        
+        // A regular provider should always apply
+        XMLConfigurationProvider ordinary = EasyMock.createMock(XMLConfigurationProvider.class);
+        EasyMock.expect(ordinary.getConfiguredXStream(xs)).andReturn(xs).once();
+        EasyMock.replay(ordinary);
+        
+        // A provider that doesn't apply to the persist context
+        ContextualConfigurationProvider noPersist = EasyMock.createMock(ContextualConfigurationProvider.class);
+        EasyMock.expect(noPersist.appliesTo(Context.PERSIST)).andReturn(false).atLeastOnce();
+        // Don't expect getConfiguredXStream(xs)
+        EasyMock.replay(noPersist);
+        
+        // A provider that does apply to the persist context
+        ContextualConfigurationProvider yesPersist = EasyMock.createMock(ContextualConfigurationProvider.class);
+        EasyMock.expect(yesPersist.appliesTo(Context.PERSIST)).andReturn(true).atLeastOnce();
+        EasyMock.expect(yesPersist.getConfiguredXStream(xs)).andReturn(xs).once();
+        EasyMock.replay(yesPersist);
+        
+        // Make the mock providers available via the application context
+        WebApplicationContext ctxt = EasyMock.createNiceMock(WebApplicationContext.class);
+        EasyMock.expect(ctxt.getBeanNamesForType(XMLConfigurationProvider.class)).andStubReturn(new String[] {"ordinary", "noPersist", "yesPersist"});
+        EasyMock.expect(ctxt.getBean("ordinary")).andStubReturn(ordinary);
+        EasyMock.expect(ctxt.getBean("noPersist")).andStubReturn(noPersist);
+        EasyMock.expect(ctxt.getBean("yesPersist")).andStubReturn(yesPersist);
+        EasyMock.replay(ctxt);
+        
+        config.getConfiguredXStream(xs, ctxt,  Context.PERSIST);
+        
+        EasyMock.verify(xs,ordinary, noPersist, yesPersist);
+    }
+    @Test
+    public void testXMLConfigurationWithoutContext() throws Exception {
+        XStream xs = EasyMock.createNiceMock(XStream.class);
+        EasyMock.replay(xs);
+        
+        // A regular provider should always apply
+        XMLConfigurationProvider ordinary = EasyMock.createMock(XMLConfigurationProvider.class);
+        EasyMock.expect(ordinary.getConfiguredXStream(xs)).andReturn(xs).once();
+        EasyMock.replay(ordinary);
+        
+        // A contextual provider that applies to any context
+        ContextualConfigurationProvider noPersist = EasyMock.createMock(ContextualConfigurationProvider.class);
+        EasyMock.expect(noPersist.appliesTo((Context)EasyMock.anyObject())).andStubReturn(false);
+        // Don't expect getConfiguredXStream(xs).  Contextual providers should be ignored if context is null.
+        EasyMock.replay(noPersist);
+        
+        // A provider that doesn't apply to the persist context
+        ContextualConfigurationProvider yesPersist = EasyMock.createMock(ContextualConfigurationProvider.class);
+        EasyMock.expect(yesPersist.appliesTo((Context)EasyMock.anyObject())).andStubReturn(true);
+        // Don't expect getConfiguredXStream(xs).  Contextual providers should be ignored if context is null.
+        EasyMock.replay(yesPersist);
+        
+        // Make the mock providers available via the application context
+        WebApplicationContext ctxt = EasyMock.createNiceMock(WebApplicationContext.class);
+        EasyMock.expect(ctxt.getBeanNamesForType(XMLConfigurationProvider.class)).andStubReturn(new String[] {"ordinary", "noPersist", "yesPersist"});
+        EasyMock.expect(ctxt.getBean("ordinary")).andStubReturn(ordinary);
+        EasyMock.expect(ctxt.getBean("noPersist")).andStubReturn(noPersist);
+        EasyMock.expect(ctxt.getBean("yesPersist")).andStubReturn(yesPersist);
+        EasyMock.replay(ctxt);
+        
+        config.getConfiguredXStream(xs, ctxt);
+        
+        EasyMock.verify(xs,ordinary, noPersist, yesPersist);
     }
 }
