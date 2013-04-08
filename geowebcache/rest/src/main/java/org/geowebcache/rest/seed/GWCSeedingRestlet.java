@@ -83,7 +83,7 @@ abstract public class GWCSeedingRestlet extends GWCRestlet {
     public void doPost(Request req, Response resp) throws RestletException, IOException {
         String formatExtension = (String) req.getAttributes().get("extension");
 
-        XStream xs = xmlConfig.getConfiguredXStreamWithContext(new XStream(new DomDriver()), Context.REST);
+        XStream xs = configXStream(new XStream(new DomDriver()));
 
         Object obj = null;
         
@@ -127,5 +127,9 @@ abstract public class GWCSeedingRestlet extends GWCRestlet {
 
     public void setXmlConfig(XMLConfiguration xmlConfig) {
         this.xmlConfig = xmlConfig;
+    }
+    
+    protected XStream configXStreamWithContext(XStream xs) {
+        return xmlConfig.getConfiguredXStream(xs, Context.REST);
     }
 }

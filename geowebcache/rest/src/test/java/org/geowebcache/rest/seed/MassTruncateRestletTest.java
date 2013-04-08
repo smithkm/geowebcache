@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 import static org.easymock.classextension.EasyMock.*;
 
 import java.io.InputStream;
-import java.util.LinkedList;
 
 import org.geowebcache.config.XMLConfiguration;
 import org.geowebcache.config.XMLConfigurationBackwardsCompatibilityTest;

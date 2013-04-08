@@ -17,31 +17,66 @@
  */
 package org.geowebcache.rest.seed;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.config.Configuration;
 import org.geowebcache.rest.RestletException;
 import org.geowebcache.seed.MassTruncateRequest;
+import org.geowebcache.seed.TruncateLayerRequest;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.StorageException;
+import org.restlet.data.MediaType;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.Representation;
+import org.restlet.resource.StringRepresentation;
+
+import com.thoughtworks.xstream.XStream;
 
 public class MassTruncateRestlet extends GWCSeedingRestlet {
-    @SuppressWarnings("unused")
     private static Log log = LogFactory.getLog(MassTruncateRestlet.class);
 
     private StorageBroker broker;
     private Configuration config;
+    
+    static final Class<?>[] DEFAULT_REQUEST_TYPES = {TruncateLayerRequest.class};
 
+    Class<?>[] requestTypes;
+    
     /**
-     * Returns a StringRepresentation with the status of the running threads in the thread pool.
+     * Responds with a simple XML document indicating the available MassRequest types.
      */
     public void doGet(Request req, Response resp) throws RestletException {
         Representation rep = null;
-        // TODO: provide a list of available mass truncation requests
+        
+        // Just use this for figuring out what the correct element names are
+        XStream xs = configXStream(new XStream());
+        
+        // Not worth the trouble of messing with XStream for the output so just assemble some XML.
+        
+        StringBuilder sb = new StringBuilder();
+        Set<String> result = new HashSet<String>();
+        sb.append("<massTruncateRequests href=\"")
+            .append(req.getResourceRef().toString(false, false)).append("\">");
+        
+        for(Class<?> requestType: getRequestTypes()) {
+            String alias = xs.getMapper().serializedClass(requestType);
+            sb.append(" <requestType>");
+            sb.append(alias);
+            sb.append("</requestType>");
+            if(!result.add(alias) && log.isWarnEnabled()) {
+                log.warn("Duplicate MassTruncate Request type: "+alias);
+            }
+        }
+        
+        sb.append("</massTruncateRequests>");
+        
+        rep = new StringRepresentation(sb.toString());
+        rep.setMediaType(MediaType.APPLICATION_XML);
         resp.setEntity(rep);
     }
 
@@ -70,4 +105,22 @@ public class MassTruncateRestlet extends GWCSeedingRestlet {
         if(this.config==null) return this.xmlConfig;
         return this.config;
     }
+
+    protected Class<?>[] getRequestTypes() {
+        if(requestTypes==null) requestTypes=DEFAULT_REQUEST_TYPES;
+        return requestTypes;
+    }
+    
+    @Override
+    protected XStream configXStream(XStream xs) {
+        xs = super.configXStream(xs);
+        xs.processAnnotations(getRequestTypes());
+        return xs;
+    }
+
+    public void setRequestTypes(Set<Class<?>> requestTypes) {
+        this.requestTypes = requestTypes.toArray(new Class<?>[requestTypes.size()]);
+    }
+    
+    
 }
