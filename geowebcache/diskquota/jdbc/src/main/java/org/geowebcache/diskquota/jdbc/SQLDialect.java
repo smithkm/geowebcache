@@ -57,16 +57,33 @@ public class SQLDialect {
     protected static final int TILESET_KEY_SIZE = 320;
     protected static final int TILEPAGE_KEY_SIZE = TILESET_KEY_SIZE;
     
+    /**
+     * A type that can hold a string, may be arbitrary length of dialect allows
+     * @param size maximum size guaranteed to fit
+     * @return
+     */
+    protected String stringType(int size) {
+        return String.format("VARCHAR(%d)", size);
+    }
+    /**
+     * A type that can hold a fixed length string
+     * @param size fixed size of string
+     * @return
+     */
+    protected String fixedStringType(int size) {
+        return String.format("CHAR(%d)", size);
+    }
+    
     protected final Map<String, List<String>> TABLE_CREATION_MAP = new LinkedHashMap<String, List<String>>() {
         {
 
             put("TILESET", Arrays.asList( //
                     "CREATE TABLE ${schema}TILESET (\n" + //
-                            "  KEY VARCHAR("+TILESET_KEY_SIZE+") PRIMARY KEY,\n" + //
-                            "  LAYER_NAME VARCHAR("+LAYER_NAME_SIZE+"),\n" + //
-                            "  GRIDSET_ID VARCHAR("+GRIDSET_ID_SIZE+"),\n" + //
-                            "  BLOB_FORMAT VARCHAR("+BLOB_FORMAT_SIZE+"),\n" + //
-                            "  PARAMETERS_ID VARCHAR("+PARAMETERS_ID_SIZE+"),\n" + //
+                            "  KEY "+stringType(TILESET_KEY_SIZE)+" PRIMARY KEY,\n" + //
+                            "  LAYER_NAME "+stringType(LAYER_NAME_SIZE)+",\n" + //
+                            "  GRIDSET_ID "+stringType(GRIDSET_ID_SIZE)+",\n" + //
+                            "  BLOB_FORMAT "+stringType(BLOB_FORMAT_SIZE)+",\n" + //
+                            "  PARAMETERS_ID "+fixedStringType(PARAMETERS_ID_SIZE)+",\n" + //
                             "  BYTES NUMERIC("+BYTES_SIZE+") NOT NULL DEFAULT 0\n" + //
                             ")", //
                     "CREATE INDEX TILESET_LAYER ON TILESET(LAYER_NAME)" //
@@ -76,9 +93,9 @@ public class SQLDialect {
             put("TILEPAGE", Arrays.asList(
                     "CREATE TABLE ${schema}TILEPAGE (\n"
                             + //
-                            " KEY VARCHAR("+TILEPAGE_KEY_SIZE+") PRIMARY KEY,\n"
+                            " KEY "+stringType(TILEPAGE_KEY_SIZE)+" PRIMARY KEY,\n"
                             + //
-                            " TILESET_ID VARCHAR("+TILESET_KEY_SIZE+") REFERENCES ${schema}TILESET(KEY) ON DELETE CASCADE,\n"
+                            " TILESET_ID "+stringType(TILESET_KEY_SIZE)+" REFERENCES ${schema}TILESET(KEY) ON DELETE CASCADE,\n"
                             + //
                             " PAGE_Z SMALLINT,\n" + //
                             " PAGE_X INTEGER,\n" + //

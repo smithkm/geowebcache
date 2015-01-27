@@ -23,4 +23,9 @@ package org.geowebcache.diskquota.jdbc;
  */
 public class PostgreSQLDialect extends SQLDialect {
 
+    @Override
+    protected String stringType(int size) {
+        return "TEXT";
+    }
+    
 }

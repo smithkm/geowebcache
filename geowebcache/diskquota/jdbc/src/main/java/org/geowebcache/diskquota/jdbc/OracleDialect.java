@@ -31,12 +31,12 @@ public class OracleDialect extends SQLDialect {
     public OracleDialect() {
         TABLE_CREATION_MAP.put("TILESET", Arrays.asList( //
                 "CREATE TABLE ${schema}TILESET (\n" + //
-                        "  KEY VARCHAR("+TILESET_KEY_SIZE+") PRIMARY KEY,\n" + //
-                        "  LAYER_NAME VARCHAR("+LAYER_NAME_SIZE+"),\n" + //
-                        "  GRIDSET_ID VARCHAR("+GRIDSET_ID_SIZE+"),\n" + //
-                        "  BLOB_FORMAT VARCHAR("+BLOB_FORMAT_SIZE+"),\n" + //
-                        "  PARAMETERS_ID VARCHAR("+PARAMETERS_ID_SIZE+"),\n" + //
-                        "  BYTES NUMBER("+BYTES_SIZE+") DEFAULT 0 NOT NULL\n" + //
+                        "  KEY "+stringType(TILESET_KEY_SIZE)+" PRIMARY KEY,\n" + //
+                        "  LAYER_NAME "+stringType(LAYER_NAME_SIZE)+",\n" + //
+                        "  GRIDSET_ID "+stringType(GRIDSET_ID_SIZE)+",\n" + //
+                        "  BLOB_FORMAT "+stringType(BLOB_FORMAT_SIZE)+",\n" + //
+                        "  PARAMETERS_ID "+fixedStringType(PARAMETERS_ID_SIZE)+",\n" + //
+                        "  BYTES NUMERIC("+BYTES_SIZE+") NOT NULL DEFAULT 0\n" + //
                         ") ORGANIZATION INDEX", //
                 "CREATE INDEX TILESET_LAYER ON TILESET(LAYER_NAME)" //
         ));
@@ -44,9 +44,9 @@ public class OracleDialect extends SQLDialect {
         TABLE_CREATION_MAP.put("TILEPAGE", Arrays.asList(
                 "CREATE TABLE ${schema}TILEPAGE (\n"
                         + //
-                        " KEY VARCHAR("+TILEPAGE_KEY_SIZE+") PRIMARY KEY,\n"
+                        " KEY "+stringType(TILEPAGE_KEY_SIZE)+" PRIMARY KEY,\n"
                         + //
-                        " TILESET_ID VARCHAR("+TILESET_KEY_SIZE+") REFERENCES ${schema}TILESET(KEY) ON DELETE CASCADE,\n"
+                        " TILESET_ID "+stringType(TILESET_KEY_SIZE)+" REFERENCES ${schema}TILESET(KEY) ON DELETE CASCADE,\n"
                         + //
                         " PAGE_Z SMALLINT,\n" + //
                         " PAGE_X INTEGER,\n" + //
