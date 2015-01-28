@@ -24,13 +24,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
+import org.geowebcache.diskquota.storage.TileSet;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
 import org.springframework.jdbc.support.DatabaseMetaDataCallback;
 import org.springframework.jdbc.support.JdbcAccessor;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
+
+import com.google.common.base.Preconditions;
 
 /**
  * Base class for quota store JDBC dialects, provides functionality based on SQL standards,
@@ -54,7 +58,7 @@ public class SQLDialect {
     protected static final int PARAMETERS_ID_SIZE = 41;
     protected static final int BYTES_SIZE = 21;
     protected static final int NUM_HITS_SIZE = 64;
-    protected static final int TILESET_KEY_SIZE = 320;
+    protected static final int TILESET_KEY_SIZE = TileSet.KEY_SIZE;
     protected static final int TILEPAGE_KEY_SIZE = TILESET_KEY_SIZE;
     
     /**
@@ -118,7 +122,7 @@ public class SQLDialect {
      * 
      * @param template
      */
-    public void initializeTables(String schema, SimpleJdbcTemplate template) {
+    public void initializeTables(@Nullable String schema, SimpleJdbcTemplate template) {
         String prefix;
         if (schema == null) {
             prefix = "";
@@ -142,7 +146,7 @@ public class SQLDialect {
      * @param tableName
      * @return
      */
-    private boolean tableExists(SimpleJdbcTemplate template, final String schema,
+    private boolean tableExists(SimpleJdbcTemplate template, final @Nullable String schema,
             final String tableName) {
         try {
             DataSource ds = ((JdbcAccessor) template.getJdbcOperations()).getDataSource();
@@ -172,7 +176,7 @@ public class SQLDialect {
         }
     }
 
-    public String getAllLayersQuery(String schema) {
+    public String getAllLayersQuery(@Nullable String schema) {
         StringBuilder sb = new StringBuilder("SELECT DISTINCT(LAYER_NAME) FROM ");
         if (schema != null) {
             sb.append(schema).append(".");
@@ -182,29 +186,52 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getLayerDeletionStatement(String schema, String layerNameParam) {
-        StringBuilder sb = new StringBuilder("DELETE FROM ");
-        if (schema != null) {
-            sb.append(schema).append(".");
-        }
-        sb.append("TILESET WHERE LAYER_NAME = :").append(layerNameParam);
-
-        return sb.toString();
+    public String getLayerDeletionStatement(@Nullable String schema, String layerNameParam) {
+        return getTileSetDeletionStatement(schema, layerNameParam, null, null, null);
     }
 
-    public String getLayerGridDeletionStatement(String schema, String layerNameParam,
+    public String getLayerGridDeletionStatement(@Nullable String schema, String layerNameParam,
             String gridsetIdParam) {
+        
+        Preconditions.checkNotNull(gridsetIdParam);
+        
+        return getTileSetDeletionStatement(schema, layerNameParam, gridsetIdParam, null, null);
+    }
+    
+    /**
+     * Create a statement to remove tilesets
+     * @param schema schema of the tileset table
+     * @param layerNameParam parameter name for the name of the layer, {@literal null} for all layers
+     * @param gridsetIdParam parameter name for the id of the gridset, {@literal null} for all gridsets
+     * @param blobFormatParam parameter name for the format of the stored blobs, {@literal null} for all formats
+     * @param parametersIdParam parameter name for the hash of the parameters, {@literal null} for all parameters
+     * @return
+     */
+    public String getTileSetDeletionStatement(@Nullable String schema, String layerNameParam,
+            @Nullable String gridsetIdParam, @Nullable String blobFormatParam, 
+            @Nullable String parametersIdParam) {
+        
+        Preconditions.checkNotNull(layerNameParam);
+        
         StringBuilder sb = new StringBuilder("DELETE FROM ");
         if (schema != null) {
             sb.append(schema).append(".");
         }
         sb.append("TILESET WHERE LAYER_NAME = :").append(layerNameParam);
-        sb.append(" AND GRIDSET_ID = :").append(gridsetIdParam);
-
+        if(gridsetIdParam!=null) {
+            sb.append(" AND GRIDSET_ID = :").append(gridsetIdParam);
+        }
+        if(blobFormatParam!=null) {
+            sb.append(" AND BLOB_FORMAT = :").append(blobFormatParam);
+        }
+        if(parametersIdParam!=null) {
+            sb.append(" AND PARAMETERS_ID = :").append(parametersIdParam);
+        }
+        
         return sb.toString();
     }
 
-    public String getTileSetsQuery(String schema) {
+    public String getTileSetsQuery(@Nullable String schema) {
         StringBuilder sb = new StringBuilder(
                 "SELECT KEY, LAYER_NAME, GRIDSET_ID, BLOB_FORMAT, PARAMETERS_ID FROM ");
         if (schema != null) {
@@ -215,7 +242,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getTileSetQuery(String schema, String keyParam) {
+    public String getTileSetQuery(@Nullable String schema, String keyParam) {
         StringBuilder sb = new StringBuilder(
                 "SELECT KEY, LAYER_NAME, GRIDSET_ID, BLOB_FORMAT, PARAMETERS_ID FROM ");
         if (schema != null) {
@@ -226,7 +253,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getCreateTileSetQuery(String schema, String keyParam, String layerNameParam,
+    public String getCreateTileSetQuery(@Nullable String schema, String keyParam, String layerNameParam,
             String gridSetIdParam, String blobFormatParam, String paramIdParam) {
         StringBuilder sb = new StringBuilder("INSERT INTO ");
         if (schema != null) {
@@ -260,7 +287,7 @@ public class SQLDialect {
         // nothing to do        
     }
 
-    public String getUsedQuotaByTileSetId(String schema, String keyParam) {
+    public String getUsedQuotaByTileSetId(@Nullable String schema, String keyParam) {
         StringBuilder sb = new StringBuilder("SELECT BYTES FROM ");
         if (schema != null) {
             sb.append(schema).append(".");
@@ -269,7 +296,7 @@ public class SQLDialect {
         return sb.toString();
     }
     
-    public String getUsedQuotaByGridSetId(String schema, String gridsetIdParam) {
+    public String getUsedQuotaByGridSetId(@Nullable String schema, String gridsetIdParam) {
         StringBuilder sb = new StringBuilder("SELECT SUM(BYTES) FROM ");
         if (schema != null) {
             sb.append(schema).append(".");
@@ -278,7 +305,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getUsedQuotaByLayerName(String schema, String layerNameParam) {
+    public String getUsedQuotaByLayerName(@Nullable String schema, String layerNameParam) {
         StringBuilder sb = new StringBuilder("SELECT SUM(BYTES) FROM ");
         if (schema != null) {
             sb.append(schema).append(".");
@@ -287,8 +314,21 @@ public class SQLDialect {
         return sb.toString();
 
     }
+    
+    public String getUsedQuotaByParameterization(@Nullable String schema, String layerNameParam, 
+            String parametersIdParam) {
+        Preconditions.checkNotNull(layerNameParam);
+        Preconditions.checkNotNull(parametersIdParam);
+        StringBuilder sb = new StringBuilder("SELECT SUM(BYTES) FROM ");
+        if (schema != null) {
+            sb.append(schema).append(".");
+        }
+        sb.append("TILESET WHERE TILESET.LAYER_NAME = :").append(layerNameParam)
+            .append(" AND PARAMETERS_ID = :").append(parametersIdParam);
+        return sb.toString();
+    }
 
-    public String getRenameLayerStatement(String schema, String oldLayerName, String newLayerName) {
+    public String getRenameLayerStatement(@Nullable String schema, String oldLayerName, String newLayerName) {
         StringBuilder sb = new StringBuilder("UPDATE ");
         if (schema != null) {
             sb.append(schema).append(".");
@@ -299,7 +339,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getUpdateQuotaStatement(String schema, String tileSetIdParam, String bytesParam) {
+    public String getUpdateQuotaStatement(@Nullable String schema, String tileSetIdParam, String bytesParam) {
         StringBuilder sb = new StringBuilder("UPDATE ");
         if (schema != null) {
             sb.append(schema).append(".");
@@ -310,7 +350,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getPageStats(String schema, String keyParam) {
+    public String getPageStats(@Nullable String schema, String keyParam) {
         StringBuilder sb = new StringBuilder(
                 "SELECT FREQUENCY_OF_USE, LAST_ACCESS_TIME_MINUTES, FILL_FACTOR, NUM_HITS FROM ");
         if (schema != null) {
@@ -321,7 +361,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String contionalTilePageInsertStatement(String schema, String keyParam,
+    public String contionalTilePageInsertStatement(@Nullable String schema, String keyParam,
             String tileSetIdParam, String zParam, String xParam, String yParam,
             String creationParam, String frequencyParam, String lastAccessParam,
             String fillFactorParam, String numHitsParam) {
@@ -360,7 +400,7 @@ public class SQLDialect {
      * @param oldFillFactorParam
      * @return
      */
-    public String conditionalUpdatePageStatsFillFactor(String schema, String keyParam,
+    public String conditionalUpdatePageStatsFillFactor(@Nullable String schema, String keyParam,
             String newfillFactorParam, String oldFillFactorParam) {
         StringBuilder sb = new StringBuilder("UPDATE ");
         if (schema != null) {
@@ -384,7 +424,7 @@ public class SQLDialect {
      * @param oldFillFactorParam
      * @return
      */
-    public String updatePageStatsFillFactor(String schema, String keyParam,
+    public String updatePageStatsFillFactor(@Nullable String schema, String keyParam,
             String newfillFactorParam) {
         StringBuilder sb = new StringBuilder("UPDATE ");
         if (schema != null) {
@@ -407,7 +447,7 @@ public class SQLDialect {
      * @param oldFillFactorParam
      * @return
      */
-    public String updatePageStats(String schema, String keyParam, String newHitsParam,
+    public String updatePageStats(@Nullable String schema, String keyParam, String newHitsParam,
             String oldHitsParam, String newFrequencyParam, String oldFrequencyParam,
             String newLastAccessTimeParam, String oldLastAccessTimeParam) {
         StringBuilder sb = new StringBuilder("UPDATE ");
@@ -427,7 +467,7 @@ public class SQLDialect {
 
     }
 
-    public String getLeastFrequentlyUsedPage(String schema, List<String> layerParamNames) {
+    public String getLeastFrequentlyUsedPage(@Nullable String schema, List<String> layerParamNames) {
         StringBuilder sb = new StringBuilder(
                 "SELECT TILESET_ID, PAGE_X, PAGE_Y, PAGE_Z, CREATION_TIME_MINUTES FROM ");
         if (schema != null) {
@@ -452,7 +492,7 @@ public class SQLDialect {
         return sb.toString();
     }
 
-    public String getLeastRecentlyUsedPage(String schema, List<String> layerParamNames) {
+    public String getLeastRecentlyUsedPage(@Nullable String schema, List<String> layerParamNames) {
         StringBuilder sb = new StringBuilder(
                 "SELECT TILESET_ID, PAGE_X, PAGE_Y, PAGE_Z, CREATION_TIME_MINUTES FROM ");
         if (schema != null) {

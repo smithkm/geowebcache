@@ -256,7 +256,14 @@ public class JDBCQuotaStore implements QuotaStore {
     public Quota getUsedQuotaByGridsetid(String gridsetId) {
         String sql = dialect.getUsedQuotaByGridSetId(schema, "gridSetId");
         return jt.queryForOptionalObject(sql, new DiskQuotaMapper(), Collections.singletonMap("gridSetId", gridsetId));
-
+    }
+    
+    public Quota getUsedQuotaByParametersId(String layerName, String parametersId) {
+        String sql = dialect.getUsedQuotaByParameterization(schema, "layerName", "parametersId");
+        Map<String, String> params = new HashMap<>();
+        params.put("layerName", layerName);
+        params.put("parametersId", parametersId);
+        return jt.queryForOptionalObject(sql, new DiskQuotaMapper(), params);
     }
 
     protected Quota getUsedQuotaByTileSetIdInternal(final String tileSetId) {
@@ -302,6 +309,30 @@ public class JDBCQuotaStore implements QuotaStore {
                 params = new HashMap<String, Object>();
                 params.put("layerName", layerName);
                 params.put("gridSetId", gridSetId);
+                jt.update(statement, params);
+            }
+        });
+    }
+    
+    public void deleteParameterization(final String layerName, final String parametersId) {
+        tt.execute(new TransactionCallbackWithoutResult() {
+
+            @Override
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                // first gather the disk quota used by the gridset, and update the global quota
+                Quota quota = getUsedQuotaByParametersId(layerName, parametersId);
+                quota.setBytes(quota.getBytes().negate());
+                String updateQuota = dialect.getUpdateQuotaStatement(schema, "tileSetId", "bytes");
+                Map<String, Object> params = new HashMap<String, Object>();
+                params.put("tileSetId", GLOBAL_QUOTA_NAME);
+                params.put("bytes", new BigDecimal(quota.getBytes()));
+                jt.update(updateQuota, params);
+                
+                // then delete all the tilesets for the specified layer and parameter hash
+                String statement = dialect.getTileSetDeletionStatement(schema, "layerName", null, null, "parametersId");
+                params = new HashMap<String, Object>();
+                params.put("layerName", layerName);
+                params.put("parametersId", parametersId);
                 jt.update(statement, params);
             }
         });

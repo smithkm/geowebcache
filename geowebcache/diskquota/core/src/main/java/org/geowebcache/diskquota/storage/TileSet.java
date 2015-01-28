@@ -36,6 +36,8 @@ public class TileSet implements Comparable<TileSet> {
     private String parametersId;
 
     private transient int cachedHashCode;
+    
+    public static final int KEY_SIZE = 320; 
 
     TileSet() {
         // empty constructor, needed by runtime code optimizers and reflection
@@ -63,7 +65,7 @@ public class TileSet implements Comparable<TileSet> {
         this.gridsetId = gridsetId;
         this.blobFormat = blobFormat;
         this.parametersId = parametersId;
-        StringBuilder sb = new StringBuilder(128);
+        StringBuilder sb = new StringBuilder(KEY_SIZE);
         computeId(layerName, gridsetId, blobFormat, parametersId, sb);
         this.key = sb.toString();
     }
