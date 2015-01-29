@@ -19,8 +19,11 @@ package org.geowebcache.diskquota;
 
 import java.util.concurrent.BlockingQueue;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.geowebcache.diskquota.storage.TileSet;
 import org.geowebcache.storage.BlobStoreListener;
 import org.geowebcache.storage.DefaultStorageBroker;
 import org.springframework.util.Assert;
@@ -184,6 +187,13 @@ class QueuedQuotaUpdatesProducer implements BlobStoreListener {
 
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
+    }
+
+    @Override
+    public void tileSetDeleted(String layerName, String gridSetId,
+                @Nullable String blobFormat, String parametersId) {
+        quotaStore.deleteTileSet(layerName, gridSetId,
+                blobFormat, parametersId);
     }
  
 }

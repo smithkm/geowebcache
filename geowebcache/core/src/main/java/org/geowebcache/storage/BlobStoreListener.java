@@ -1,5 +1,7 @@
 package org.geowebcache.storage;
 
+import javax.annotation.Nullable;
+
 public interface BlobStoreListener {
 
     void tileStored(String layerName, String gridSetId, String blobFormat, String parametersId,
@@ -17,4 +19,5 @@ public interface BlobStoreListener {
 
     void gridSubsetDeleted(String layerName, String gridSetId);
 
+    void tileSetDeleted(String layerName, String gridSetId, @Nullable String blobFormat, String parametersId);
 }

@@ -33,6 +33,12 @@ import org.geowebcache.diskquota.storage.TileSet;
 import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.storage.DefaultStorageFinder;
+import org.geowebcache.storage.blobstore.file.FilePathGenerator;
+import org.hamcrest.Matcher;
+import org.junit.Assert;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
 
 public class BDBQuotaStoreTest extends TestCase {
 
@@ -260,7 +266,125 @@ public class BDBQuotaStoreTest extends TestCase {
         assertNotNull(usedQuota);
         assertEquals(0L, usedQuota.getBytes().longValue());
     }
+    
+    
+    public void testDeleteTileSet() throws InterruptedException {
+        // put some data into the layers
+        String paramHash1 = FilePathGenerator.getParametersId(Collections.singletonMap("foo", "bar"));
+        String paramHash2 = FilePathGenerator.getParametersId(Collections.singletonMap("foo", "baz"));
+        String layerName1 = "topp:states";
+        String layerName2 = "topp:states2";
+        String gridsetId1 = "EPSG:4326";
+        String gridsetId2 = "EPSG:2163";
+        TileSet tset1p1 = new TileSet(layerName1, gridsetId1, "image/png", paramHash1);
+        TileSet tset1p2 = new TileSet(layerName1, gridsetId1, "image/png", paramHash2);
+        TileSet tset2p1 = new TileSet(layerName2, gridsetId2, "image/jpeg", paramHash1);
+        TileSet tset2p2 = new TileSet(layerName2, gridsetId2, "image/jpeg", paramHash2);
+        
+        addToQuotaStore(tset1p1, 1);
+        addToQuotaStore(tset1p2, 2);
+        addToQuotaStore(tset2p1, 3);
+        addToQuotaStore(tset2p2, 4);
+       
+        Quota tset1p1Quota = store.getUsedQuotaByTileSetId(tset1p1.getId());
+        Quota tset1p2Quota = store.getUsedQuotaByTileSetId(tset1p2.getId());
+        Quota tset2p1Quota = store.getUsedQuotaByTileSetId(tset2p1.getId());
+        Quota tset2p2Quota = store.getUsedQuotaByTileSetId(tset2p2.getId());
+        Quota globalQuota = store.getGloballyUsedQuota();
+        Quota sum = new Quota();
+        sum.add(tset1p1Quota);
+        sum.add(tset1p2Quota);
+        sum.add(tset2p1Quota);
+        sum.add(tset2p2Quota);
+        assertEquals(globalQuota.getBytes(), sum.getBytes());
+        
+        assertThat(tset1p1Quota.getBytes(), equalTo(StorageUnit.MiB.toBytes(1)));
+        assertThat(tset1p2Quota.getBytes(), equalTo(StorageUnit.MiB.toBytes(2)));
+        assertThat(tset2p1Quota.getBytes(), equalTo(StorageUnit.MiB.toBytes(3)));
+        assertThat(tset2p2Quota.getBytes(), equalTo(StorageUnit.MiB.toBytes(4)));
+        
+        store.deleteTileSet(tset1p1.getLayerName(), tset1p1.getGridsetId(), tset1p1.getBlobFormat(), tset1p1.getParametersId());
+        
+        Quota tset1p1QuotaPost = store.getUsedQuotaByTileSetId(tset1p1.getId());
+        Quota tset1p2QuotaPost = store.getUsedQuotaByTileSetId(tset1p2.getId());
+        Quota tset2p1QuotaPost = store.getUsedQuotaByTileSetId(tset2p1.getId());
+        Quota tset2p2QuotaPost = store.getUsedQuotaByTileSetId(tset2p2.getId());
+        Quota globalQuotaPost = store.getGloballyUsedQuota();
+        Quota sumPost = new Quota();
+        sumPost.add(tset1p2QuotaPost);
+        sumPost.add(tset2p1QuotaPost);
+        sumPost.add(tset2p2QuotaPost);
 
+        assertThat(tset1p1QuotaPost, anyOf(nullValue(), hasProperty("bytes", equalTo(BigInteger.ZERO))));
+        assertEquals(globalQuotaPost.getBytes(), globalQuota.getBytes().subtract(tset1p1Quota.getBytes()));
+        assertEquals(globalQuotaPost.getBytes(), sumPost.getBytes());
+        assertEquals(tset1p2Quota.getBytes(), tset1p2Quota.getBytes());
+        assertEquals(tset2p1Quota.getBytes(), tset2p1Quota.getBytes());
+        assertEquals(tset2p2Quota.getBytes(), tset2p2Quota.getBytes());
+    }
+    public void testDeleteTileSetMultipleFormats() throws InterruptedException {
+        // put some data into the layer
+        String paramHash1 = FilePathGenerator.getParametersId(Collections.singletonMap("foo", "bar"));
+        String paramHash2 = FilePathGenerator.getParametersId(Collections.singletonMap("foo", "baz"));
+        String layerName1 = "topp:states";
+        String gridsetId1 = "EPSG:4326";
+        String gridsetId2 = "EPSG:900913";
+        TileSet tset111 = new TileSet(layerName1, gridsetId1, "image/jpeg", paramHash1);
+        TileSet tset121 = new TileSet(layerName1, gridsetId1, "image/jpeg", paramHash2);
+        TileSet tset211 = new TileSet(layerName1, gridsetId1, "image/png", paramHash1);
+        TileSet tset221 = new TileSet(layerName1, gridsetId1, "image/png", paramHash2);
+        TileSet tset112 = new TileSet(layerName1, gridsetId2, "image/jpeg", paramHash1);
+        TileSet tset122 = new TileSet(layerName1, gridsetId2, "image/jpeg", paramHash2);
+        TileSet tset212 = new TileSet(layerName1, gridsetId2, "image/png", paramHash1);
+        TileSet tset222 = new TileSet(layerName1, gridsetId2, "image/png", paramHash2);
+
+        addToQuotaStore(tset111, 1);
+        addToQuotaStore(tset121, 2);
+        addToQuotaStore(tset211, 3);
+        addToQuotaStore(tset221, 4);
+        addToQuotaStore(tset112, 5);
+        addToQuotaStore(tset122, 6);
+        addToQuotaStore(tset212, 7);
+        addToQuotaStore(tset222, 8);
+        
+        Quota expectFreed = new Quota();
+        expectFreed.add(store.getUsedQuotaByTileSetId(tset111.getId()));
+        expectFreed.add(store.getUsedQuotaByTileSetId(tset211.getId()));
+        Quota globalQuota = store.getGloballyUsedQuota();
+        Quota sum = new Quota();
+        sum.add(store.getUsedQuotaByTileSetId(tset111.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset121.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset211.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset221.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset112.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset122.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset212.getId()));
+        sum.add(store.getUsedQuotaByTileSetId(tset222.getId()));
+        assertEquals(globalQuota.getBytes(), sum.getBytes());
+        
+        store.deleteTileSet(tset111.getLayerName(), tset111.getGridsetId(), null, tset111.getParametersId());
+        
+        Quota globalQuotaPost = store.getGloballyUsedQuota();
+
+        assertThat(store.getUsedQuotaByTileSetId(tset111.getId()), anyOf(nullValue(), hasProperty("bytes", equalTo(BigInteger.ZERO))));
+        assertThat(store.getUsedQuotaByTileSetId(tset121.getId()), hasProperty("bytes", equalTo(StorageUnit.MiB.toBytes(2))));
+        assertThat(store.getUsedQuotaByTileSetId(tset211.getId()), anyOf(nullValue(), hasProperty("bytes", equalTo(BigInteger.ZERO))));
+        assertThat(store.getUsedQuotaByTileSetId(tset221.getId()), hasProperty("bytes", equalTo(StorageUnit.MiB.toBytes(4))));
+        assertThat(store.getUsedQuotaByTileSetId(tset112.getId()), hasProperty("bytes", equalTo(StorageUnit.MiB.toBytes(5))));
+        assertThat(store.getUsedQuotaByTileSetId(tset122.getId()), hasProperty("bytes", equalTo(StorageUnit.MiB.toBytes(6))));
+        assertThat(store.getUsedQuotaByTileSetId(tset212.getId()), hasProperty("bytes", equalTo(StorageUnit.MiB.toBytes(7))));
+        assertThat(store.getUsedQuotaByTileSetId(tset222.getId()), hasProperty("bytes", equalTo(StorageUnit.MiB.toBytes(8))));
+
+        assertEquals(globalQuotaPost.getBytes(), globalQuota.getBytes().subtract(expectFreed.getBytes()));
+    }
+
+    private void addToQuotaStore(TileSet tset, int size) throws InterruptedException {
+        Quota quotaDiff = new Quota(size, StorageUnit.MiB);
+        PageStatsPayload stats = new PageStatsPayload(new TilePage(tset.getId(), 0, 0, 3));
+        stats.setNumTiles(10*size);
+        store.addToQuotaAndTileCounts(tset, quotaDiff, Collections.singletonList(stats));
+    }
+    
     public void testRenameLayer() throws InterruptedException {
         final String oldLayerName = tilePageCalculator.getLayerNames().iterator().next();
         final String newLayerName = "renamed_layer";

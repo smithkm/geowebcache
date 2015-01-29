@@ -1,9 +1,14 @@
 package org.geowebcache.diskquota;
 
+import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+
+import javax.annotation.Nullable;
 
 import org.geowebcache.diskquota.storage.PageStats;
 import org.geowebcache.diskquota.storage.PageStatsPayload;
@@ -12,6 +17,8 @@ import org.geowebcache.diskquota.storage.TilePage;
 import org.geowebcache.diskquota.storage.TilePageCalculator;
 import org.geowebcache.diskquota.storage.TileSet;
 import org.geowebcache.diskquota.storage.TileSetVisitor;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 
 public interface QuotaStore {
 
@@ -97,5 +104,12 @@ public interface QuotaStore {
      * @throws Exception 
      */
     public abstract void close() throws Exception;
+
+    /**
+     * Remove one particular TileSet 
+     * @param tileSet
+     */
+    public abstract void deleteTileSet(final String layerName, final String gridSetId,
+            @Nullable final String blobFormat, final String parametersId);
 
 }

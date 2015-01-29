@@ -306,25 +306,28 @@ public class SQLDialect {
     }
 
     public String getUsedQuotaByLayerName(@Nullable String schema, String layerNameParam) {
+        return getUsedQuotaByTileSetProps(schema, layerNameParam, null, null, null);
+    }
+    
+    public String getUsedQuotaByParameterization(@Nullable String schema, String layerNameParam, 
+            String parametersIdParam) {
+        Preconditions.checkNotNull(parametersIdParam);
+        return getUsedQuotaByTileSetProps(schema, layerNameParam, null, null, parametersIdParam);
+    }
+    
+    public String getUsedQuotaByTileSetProps(@Nullable String schema, final String layerNameParam, 
+            @Nullable final String gridSetIdParam,
+            @Nullable final String blobFormatParam, 
+            @Nullable final String parametersIdParam) {
+        Preconditions.checkNotNull(layerNameParam);
         StringBuilder sb = new StringBuilder("SELECT SUM(BYTES) FROM ");
         if (schema != null) {
             sb.append(schema).append(".");
         }
         sb.append("TILESET WHERE TILESET.LAYER_NAME = :").append(layerNameParam);
-        return sb.toString();
-
-    }
-    
-    public String getUsedQuotaByParameterization(@Nullable String schema, String layerNameParam, 
-            String parametersIdParam) {
-        Preconditions.checkNotNull(layerNameParam);
-        Preconditions.checkNotNull(parametersIdParam);
-        StringBuilder sb = new StringBuilder("SELECT SUM(BYTES) FROM ");
-        if (schema != null) {
-            sb.append(schema).append(".");
-        }
-        sb.append("TILESET WHERE TILESET.LAYER_NAME = :").append(layerNameParam)
-            .append(" AND PARAMETERS_ID = :").append(parametersIdParam);
+        if(gridSetIdParam!=null) sb.append(" AND GRIDSET_ID = :").append(gridSetIdParam);
+        if(blobFormatParam!=null) sb.append(" AND BLOB_FORMAT = :").append(blobFormatParam);
+        if(parametersIdParam!=null) sb.append(" AND PARAMETERS_ID = :").append(parametersIdParam);
         return sb.toString();
     }
 

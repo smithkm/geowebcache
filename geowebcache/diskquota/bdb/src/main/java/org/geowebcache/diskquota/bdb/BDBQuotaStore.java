@@ -35,6 +35,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -402,51 +404,6 @@ public class BDBQuotaStore implements QuotaStore {
         }
     }
 
-    private class DeleteLayer implements Callable<Void> {
-
-        private final String layerName;
-
-        public DeleteLayer(String layerName) {
-            this.layerName = layerName;
-        }
-
-        public Void call() throws Exception {
-            Transaction transaction = entityStore.getEnvironment().beginTransaction(null, null);
-            try {
-                call(transaction);
-                transaction.commit();
-            } catch (RuntimeException e) {
-                transaction.abort();
-                throw e;
-            }
-            return null;
-        }
-
-        public void call(Transaction transaction) {
-
-            EntityCursor<TileSet> tileSets = tileSetsByLayer.entities(transaction, layerName, true,
-                    layerName, true, null);
-            try {
-                TileSet tileSet;
-                Quota freed;
-                Quota global;
-                while (null != (tileSet = tileSets.next())) {
-                    freed = usedQuotaByTileSetId
-                            .get(transaction, tileSet.getId(), LockMode.DEFAULT);
-                    global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
-                            LockMode.DEFAULT);
-
-                    tileSets.delete();
-                    global.subtract(freed.getBytes());
-                    usedQuotaById.put(transaction, global);
-                }
-            } finally {
-                tileSets.close();
-            }
-        }
-
-    }
-
     /**
      * @see org.geowebcache.diskquota.QuotaStore#deleteLayer(java.lang.String)
      */
@@ -455,52 +412,15 @@ public class BDBQuotaStore implements QuotaStore {
         issue(new DeleteLayer(layerName));
     }
 
-    public void deleteGridSubset(String layerName, String gridSetId) {
-        issue(new DeleteLayerGridSubset(layerName, gridSetId));
-    }
+    public void deleteGridSubset(String layerName, final String gridSetId) {
+        issue(new FilteredTileSetDeleter(layerName){
 
-    private class DeleteLayerGridSubset implements Callable<Void> {
-
-        private final String layerName;
-
-        private final String gridSetId;
-
-        public DeleteLayerGridSubset(String layerName, String gridSetId) {
-            this.layerName = layerName;
-            this.gridSetId = gridSetId;
-        }
-
-        public Void call() {
-            Transaction transaction = entityStore.getEnvironment().beginTransaction(null, null);
-            try {
-                EntityCursor<TileSet> tileSets = tileSetsByLayer.entities(transaction, layerName,
-                        true, layerName, true, null);
-                TileSet tileSet;
-                Quota freed;
-                Quota global;
-                try {
-                    while (null != (tileSet = tileSets.next())) {
-                        if (tileSet.getGridsetId().equals(gridSetId)) {
-                            freed = usedQuotaByTileSetId.get(transaction, tileSet.getId(),
-                                    LockMode.DEFAULT);
-                            global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
-                                    LockMode.DEFAULT);
-
-                            tileSets.delete();
-                            global.subtract(freed.getBytes());
-                            usedQuotaById.put(transaction, global);
-                        }
-                    }
-                } finally {
-                    tileSets.close();
-                }
-                transaction.commit();
-            } catch (RuntimeException e) {
-                transaction.abort();
-                throw e;
+            @Override
+            protected boolean shouldDelete(TileSet tileSet) {
+                return tileSet.getGridsetId().equals(gridSetId);
             }
-            return null;
-        }
+            
+        });
     }
 
     /**
@@ -930,6 +850,96 @@ public class BDBQuotaStore implements QuotaStore {
      */
     public PageStats setTruncated(final TilePage tilePage) throws InterruptedException {
         return issueSync(new TruncatePage(tilePage));
+    }
+    
+    class DeleteLayer extends FilteredTileSetDeleter {
+
+        public DeleteLayer(String layerName) {
+            super(layerName);
+        }
+
+        @Override
+        protected boolean shouldDelete(TileSet tileSet) {
+            assert tileSet.getLayerName().equals(this.layerName);
+            return true;
+        }
+        
+    }
+    
+    abstract class DatabaseAction implements Callable<Void> {
+        public Void call() {
+            Transaction transaction = entityStore.getEnvironment().beginTransaction(null, null);
+            try {
+                call(transaction);
+                transaction.commit();
+            } catch (Exception e) {
+                transaction.abort();
+                throw e;
+            }
+            return null;
+        }
+        
+        abstract public void call(Transaction transaction);
+    }
+    
+    abstract class FilteredTileSetDeleter extends DatabaseAction {
+        final String layerName;
+        
+        public FilteredTileSetDeleter(String layerName) {
+            this.layerName = layerName;
+        }
+        
+        public void call(Transaction transaction) {
+            EntityCursor<TileSet> tileSets = tileSetsByLayer.entities(transaction, layerName,
+                    true, layerName, true, null);
+            Quota freed;
+            Quota global;
+            try {
+                for(TileSet tileSet :tileSets) {
+                    if (shouldDelete(tileSet)) {
+                        freed = usedQuotaByTileSetId.get(transaction, tileSet.getId(),
+                                LockMode.DEFAULT);
+                        global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
+                                LockMode.DEFAULT);
+   
+                        tileSets.delete();
+                        global.subtract(freed.getBytes());
+                        usedQuotaById.put(transaction, global);
+                    }
+                }
+            } finally {
+                tileSets.close();
+            }
+        }
+        
+        /**
+         * @param tileSet
+         */
+        protected abstract boolean shouldDelete(TileSet tileSet);
+    }
+    
+    static boolean nullSafeEquals(Object o1, Object o2) {
+        if(o1 == o2) return true;
+        if(o1 == null || o2 == null) return false;
+        return o1.equals(o2);
+    }
+    
+    @Override
+    public void deleteTileSet(final String layerName, final String gridSetId,
+            @Nullable final String blobFormat, final String parametersId) {
+        issue(new FilteredTileSetDeleter(layerName) {
+
+            @Override
+            protected boolean shouldDelete(TileSet tileSet) {
+                assert tileSet.getLayerName().equals(layerName);
+                
+                if(!nullSafeEquals(tileSet.getGridsetId(),gridSetId)) return false;
+                if(blobFormat!=null && !nullSafeEquals(tileSet.getGridsetId(),gridSetId)) return false;
+                if(!nullSafeEquals(tileSet.getParametersId(),parametersId)) return false;
+                return true;
+            }
+            
+        });
     }
 
     private class TruncatePage implements Callable<PageStats> {

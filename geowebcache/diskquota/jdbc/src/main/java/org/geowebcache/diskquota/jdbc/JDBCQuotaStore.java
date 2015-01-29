@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
 import org.apache.commons.dbcp.BasicDataSource;
@@ -265,6 +266,16 @@ public class JDBCQuotaStore implements QuotaStore {
         params.put("parametersId", parametersId);
         return jt.queryForOptionalObject(sql, new DiskQuotaMapper(), params);
     }
+    public Quota getUsedQuotaByTileSetProps(final String layerName, final String gridSetId,
+            @Nullable final String blobFormat, final String parametersId) {
+        String sql = dialect.getUsedQuotaByTileSetProps(schema, "layerName", "gridsetId", blobFormat==null?null:"blobFormat", "parametersId");
+        Map<String, String> params = new HashMap<>();
+        params.put("layerName", layerName);
+        params.put("gridsetId", gridSetId);
+        params.put("blobFormat", blobFormat);
+        params.put("parametersId", parametersId);
+        return jt.queryForOptionalObject(sql, new DiskQuotaMapper(), params);
+    }
 
     protected Quota getUsedQuotaByTileSetIdInternal(final String tileSetId) {
         String sql = dialect.getUsedQuotaByTileSetId(schema, "key");
@@ -314,13 +325,15 @@ public class JDBCQuotaStore implements QuotaStore {
         });
     }
     
-    public void deleteParameterization(final String layerName, final String parametersId) {
+    @Override
+    public void deleteTileSet(final String layerName, final String gridSetId,
+            @Nullable final String blobFormat, final String parametersId) {
         tt.execute(new TransactionCallbackWithoutResult() {
 
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
                 // first gather the disk quota used by the gridset, and update the global quota
-                Quota quota = getUsedQuotaByParametersId(layerName, parametersId);
+                Quota quota = getUsedQuotaByTileSetProps(layerName, gridSetId, blobFormat, parametersId);
                 quota.setBytes(quota.getBytes().negate());
                 String updateQuota = dialect.getUpdateQuotaStatement(schema, "tileSetId", "bytes");
                 Map<String, Object> params = new HashMap<String, Object>();
@@ -329,9 +342,12 @@ public class JDBCQuotaStore implements QuotaStore {
                 jt.update(updateQuota, params);
                 
                 // then delete all the tilesets for the specified layer and parameter hash
-                String statement = dialect.getTileSetDeletionStatement(schema, "layerName", null, null, "parametersId");
+                String statement = dialect.getTileSetDeletionStatement(schema, "layerName", 
+                        "gridsetId", blobFormat==null?null:"blobFormat", "parametersId");
                 params = new HashMap<String, Object>();
                 params.put("layerName", layerName);
+                params.put("gridsetId", gridSetId);
+                if(blobFormat!=null) params.put("blobFormat", blobFormat);
                 params.put("parametersId", parametersId);
                 jt.update(statement, params);
             }
