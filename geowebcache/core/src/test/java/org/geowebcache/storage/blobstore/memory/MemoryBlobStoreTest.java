@@ -39,7 +39,10 @@ import org.geowebcache.storage.blobstore.memory.MemoryBlobStore;
 import org.geowebcache.storage.blobstore.memory.NullBlobStore;
 import org.geowebcache.storage.blobstore.memory.guava.GuavaCacheProvider;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * This test class is used for testing {@link MemoryBlobStore} functionality
@@ -55,7 +58,13 @@ public class MemoryBlobStoreTest {
 
     /** Cache object */
     private static CacheProvider cache;
+    @Rule 
+    public TemporaryFolder cacheDir = new TemporaryFolder();;
+    @Rule 
+    public ExpectedException expectedException = ExpectedException.none();
 
+    FileBlobStore fbs;
+    
     @BeforeClass
     public static void initialSetup() {
         // Initial cache configuration
@@ -214,17 +223,7 @@ public class MemoryBlobStoreTest {
      * @throws Exception
      */
     private FileBlobStore setup() throws Exception {
-        File fh = new File(StorageBrokerTest.findTempDir() + File.separator + TEST_BLOB_DIR_NAME);
-
-        if (fh.exists()) {
-            FileUtils.deleteDirectory(fh);
-        }
-        if (!fh.exists() && !fh.mkdirs()) {
-            throw new StorageException("Unable to create " + fh.getAbsolutePath());
-        }
-
-        return new FileBlobStore(StorageBrokerTest.findTempDir() + File.separator
-                + TEST_BLOB_DIR_NAME);
+        return new FileBlobStore(cacheDir.getRoot().getAbsolutePath());
     }
 
     /**

@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -38,9 +39,11 @@ import java.util.concurrent.Executors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.geowebcache.config.Configuration;
 import org.geowebcache.config.ConfigurationException;
 import org.geowebcache.io.FileResource;
 import org.geowebcache.io.Resource;
+import org.geowebcache.layer.TileLayer;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.BlobStore;
@@ -59,6 +62,11 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
  * 
  */
 public class FileBlobStore implements BlobStore {
+    private static final String META_KEY_PREFIX = "org.geowebcache.storage.blobstore.file.FileBlobStore";
+    private static final String LAYER_NAME_META_KEY = META_KEY_PREFIX+".layerName";
+    private static final String GRIDSET_NAME_META_KEY = META_KEY_PREFIX+".gridset";
+    private static final String PARAMETERS_NAME_META_KEY = META_KEY_PREFIX+".parameters";
+
     private static Log log = LogFactory
             .getLog(org.geowebcache.storage.blobstore.file.FileBlobStore.class);
 
@@ -465,14 +473,14 @@ public class FileBlobStore implements BlobStore {
             log.error(me.getMessage());
             throw new RuntimeException(me);
         }
-
+        
         final File tilePath = pathGenerator.tilePath(stObj, mimeType);
-
+        
         if (create) {
             File parent = tilePath.getParentFile();
-            mkdirs(parent, stObj);
+            mkdirs(parent);
         }
-
+        
         return tilePath;
     }
 
@@ -554,13 +562,12 @@ public class FileBlobStore implements BlobStore {
     }
 
     /**
-     * This method will recursively create the missing directories and call the listeners
-     * directoryCreated method for each created directory.
+     * This method will recursively create the missing directories
      * 
      * @param path
      * @return
      */
-    private boolean mkdirs(File path, TileObject stObj) {
+    private boolean mkdirs(File path) {
         /* If the terminal directory already exists, answer false */
         if (path.exists()) {
             return false;
@@ -576,14 +583,38 @@ public class FileBlobStore implements BlobStore {
             return false;
         }
         /* Otherwise, try to create a parent directory and then this directory */
-        mkdirs(new File(parentDir), stObj);
+        mkdirs(new File(parentDir));
         if (path.mkdir()) {
-            // listeners.sendDirectoryCreated(stObj);
             return true;
         }
         return false;
     }
 
+    private boolean makeLayerDir(String layerName) {
+        File layerDir = pathGenerator.layerPath(layerName);
+        if(layerDir.mkdir()) {
+            putMetadata(LAYER_NAME_META_KEY, layerName, getMetadataFile(layerDir));
+            return true;
+        } else {
+            return false;
+        }
+    }
+    private boolean makeTileSetDir(TileObject to) {
+        makeLayerDir(to.getLayerName());
+        File tsDir = pathGenerator.tileSetPath(to);
+        
+        if(tsDir.mkdir()) {
+            File metadata = getMetadataFile(tsDir);
+            putMetadata(GRIDSET_NAME_META_KEY, to.getGridSetId(), metadata);
+            for(Map.Entry<String,  String> param: to.getParameters().entrySet()){
+                putMetadata(String.format("%s.%s", PARAMETERS_NAME_META_KEY,param.getKey()), param.getValue(), metadata);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
     /**
      * @see org.geowebcache.storage.BlobStore#getLayerMetadata(java.lang.String, java.lang.String)
      */
@@ -599,13 +630,30 @@ public class FileBlobStore implements BlobStore {
         }
         return value;
     }
-
+    
+    private String getLayerNameFromDirectory(File directory) {
+        Properties props = getMetadata(getMetadataFile(directory));
+        String name = props.getProperty(LAYER_NAME_META_KEY);
+        return name;
+    }
+    
     /**
      * @see org.geowebcache.storage.BlobStore#putLayerMetadata(java.lang.String, java.lang.String,
      *      java.lang.String)
      */
     public void putLayerMetadata(final String layerName, final String key, final String value) {
-        Properties metadata = getLayerMetadata(layerName);
+        final File metadataFile = getMetadataFile(layerName);
+        putMetadata(key, value, metadataFile);
+    }
+
+    /**
+     * @param key
+     * @param value
+     * @param metadataFile
+     */
+    private void putMetadata(final String key, final String value,
+            final File metadataFile) {
+        Properties metadata = getMetadata(metadataFile);
         if (null == value) {
             metadata.remove(key);
         } else {
@@ -615,8 +663,6 @@ public class FileBlobStore implements BlobStore {
                 throw new RuntimeException(e);
             }
         }
-
-        final File metadataFile = getMetadataFile(layerName);
 
         final String lockObj = metadataFile.getAbsolutePath().intern();
         synchronized (lockObj) {
@@ -646,6 +692,14 @@ public class FileBlobStore implements BlobStore {
 
     private Properties getLayerMetadata(final String layerName) {
         final File metadataFile = getMetadataFile(layerName);
+        return getMetadata(metadataFile);
+    }
+
+    /**
+     * @param metadataFile
+     * @return
+     */
+    private Properties getMetadata(final File metadataFile) {
         Properties properties = new Properties();
         final String lockObj = metadataFile.getAbsolutePath().intern();
         synchronized (lockObj) {
@@ -674,6 +728,15 @@ public class FileBlobStore implements BlobStore {
 
     private File getMetadataFile(final String layerName) {
         File layerPath = getLayerPath(layerName);
+        File metadataFile = getMetadataFile(layerPath);
+        return metadataFile;
+    }
+
+    /**
+     * @param layerPath
+     * @return
+     */
+    private File getMetadataFile(File layerPath) {
         File metadataFile = new File(layerPath, "metadata.properties");
         return metadataFile;
     }

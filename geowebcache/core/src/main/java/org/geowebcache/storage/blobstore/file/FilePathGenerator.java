@@ -58,12 +58,43 @@ public class FilePathGenerator {
      * @return File pointer to the tile image
      */
     public File tilePath(TileObject tile, MimeType mimeType) {
+        StringBuilder path = new StringBuilder(256);
+        
+        buildTilePath(tile, mimeType, path);
+
+        File tileFile = new File(path.toString());
+        return tileFile;
+    }
+    
+    public File tileSetPath(TileObject tile) {
+        StringBuilder path = new StringBuilder(256);
+        
+        final long[] tileIndex = tile.getXYZ();
+        long z = tileIndex[2];
+        buildTileSetPath(tile, z, path);
+
+        File tileFile = new File(path.toString());
+        return tileFile;
+    }
+    public File layerPath(String layerName) {
+        StringBuilder path = new StringBuilder(256);
+        
+        buildLayerPath(layerName, path);
+
+        File tileFile = new File(path.toString());
+        return tileFile;
+    }
+    /**
+     * @param tile
+     * @param mimeType
+     * @param path
+     */
+    private void buildTilePath(TileObject tile, MimeType mimeType,
+            StringBuilder path) {
         final long[] tileIndex = tile.getXYZ();
         long x = tileIndex[0];
         long y = tileIndex[1];
         long z = tileIndex[2];
-
-        StringBuilder path = new StringBuilder(256);
 
         long shift = z / 2;
         long half = 2 << shift;
@@ -76,9 +107,28 @@ public class FilePathGenerator {
 
         String fileExtension = mimeType.getFileExtension();
 
-        path.append(cacheRoot);
+        buildTileSetPath(tile, z, path);
+        
         path.append(File.separatorChar);
-        appendFiltered(tile.getLayerName(), path);
+        zeroPadder(halfx, digits, path);
+        path.append('_');
+        zeroPadder(halfy, digits, path);
+        path.append(File.separatorChar);
+
+        zeroPadder(x, 2 * digits, path);
+        path.append('_');
+        zeroPadder(y, 2 * digits, path);
+        path.append('.');
+        path.append(fileExtension);
+    }
+
+    /**
+     * @param tile
+     * @param path
+     * @param z
+     */
+    private void buildTileSetPath(TileObject tile, long z, StringBuilder path) {
+        buildLayerPath(tile.getLayerName(), path);
         path.append(File.separatorChar);
         appendGridsetZoomLevelDir(tile.getGridSetId(), z, path);
         String parametersId = tile.getParametersId();
@@ -91,22 +141,20 @@ public class FilePathGenerator {
             path.append('_');
             path.append(parametersId);
         }
-        path.append(File.separatorChar);
-        zeroPadder(halfx, digits, path);
-        path.append('_');
-        zeroPadder(halfy, digits, path);
-        path.append(File.separatorChar);
-
-        zeroPadder(x, 2 * digits, path);
-        path.append('_');
-        zeroPadder(y, 2 * digits, path);
-        path.append('.');
-        path.append(fileExtension);
-
-        File tileFile = new File(path.toString());
-        return tileFile;
     }
 
+    /**
+     * @param tile
+     * @param path
+     */
+    private void buildLayerPath(String layerName, StringBuilder path) {
+        path.append(cacheRoot);
+        path.append(File.separatorChar);
+        appendFiltered(layerName, path);
+    }
+
+    
+    
     protected static String buildKey(String parametersKvp) {
         return DigestUtils.shaHex(parametersKvp);
     }

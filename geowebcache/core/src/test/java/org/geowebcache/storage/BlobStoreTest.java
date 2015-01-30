@@ -17,14 +17,16 @@
  */
 package org.geowebcache.storage;
 
-import java.io.File;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.easymock.classextension.EasyMock;
 import org.geowebcache.grid.SRS;
@@ -33,12 +35,27 @@ import org.geowebcache.io.Resource;
 import org.geowebcache.mime.ImageMime;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.blobstore.file.FileBlobStore;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
-public class BlobStoreTest extends TestCase {
-    public static final String TEST_BLOB_DIR_NAME = "gwcTestBlobs";
+public class BlobStoreTest {
+    @Rule 
+    public TemporaryFolder cacheDir = new TemporaryFolder();;
+    @Rule 
+    public ExpectedException expectedException = ExpectedException.none();
 
+    @Before
+    public void setup() throws Exception {
+        fbs = new FileBlobStore(cacheDir.getRoot().toString());
+    }
+    
+    FileBlobStore fbs;
+    
+    @Test
     public void testTile() throws Exception {
-        FileBlobStore fbs = setup();
 
         Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
         long[] xyz = { 1L, 2L, 3L };
@@ -56,19 +73,17 @@ public class BlobStoreTest extends TestCase {
         to2.setId(11231231);
         fbs.get(to2);
 
-        assertEquals(to.getBlobFormat(), to2.getBlobFormat());
-        InputStream is = to.getBlob().getInputStream();
-        InputStream is2 = to2.getBlob().getInputStream();
-        try {
+        assertThat(to2.getBlobFormat(), equalTo(to.getBlobFormat()));
+        try(
+            InputStream is = to.getBlob().getInputStream();
+            InputStream is2 = to2.getBlob().getInputStream();
+        ){
             assertTrue(IOUtils.contentEquals(is, is2));
-        } finally {
-            is.close();
-            is2.close();
         }
     }
 
+    @Test
     public void testTileDelete() throws Exception {
-        FileBlobStore fbs = setup();
 
         Map<String, String> parameters = new HashMap<String, String>();
         parameters.put("a", "x");
@@ -87,14 +102,12 @@ public class BlobStoreTest extends TestCase {
         to2.setId(11231231);
         fbs.get(to2);
 
-        InputStream is = to2.getBlob().getInputStream();
-        InputStream is2 = bytes.getInputStream();
-        try {
+        try(
+            InputStream is = to2.getBlob().getInputStream();
+            InputStream is2 = bytes.getInputStream();
+        ){
             assertTrue(IOUtils.contentEquals(is, is2));
-        } finally {
-            is.close();
-            is2.close();
-        }
+        } 
 
         TileObject to3 = TileObject.createQueryTileObject("test:123123 112", xyz, "EPSG:4326",
                 "image/jpeg", parameters);
@@ -105,8 +118,8 @@ public class BlobStoreTest extends TestCase {
         assertFalse(fbs.get(to4));
     }
 
+    @Test
     public void testTilRangeDelete() throws Exception {
-        FileBlobStore fbs = setup();
 
         Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
         Map<String, String> parameters = new HashMap<String, String>();
@@ -147,25 +160,21 @@ public class BlobStoreTest extends TestCase {
         TileObject firstTO = TileObject.createQueryTileObject(layerName, tos[0].xyz,
                 srs.toString(), mime.getFormat(), parameters);
         fbs.get(firstTO);
-        InputStream is = firstTO.getBlob().getInputStream();
-        InputStream is2 = bytes.getInputStream();
-        try {
+        try(
+            InputStream is = firstTO.getBlob().getInputStream();
+            InputStream is2 = bytes.getInputStream();
+        ) {
             assertTrue(IOUtils.contentEquals(is, is2));
-        } finally {
-            is.close();
-            is2.close();
         }
 
         TileObject lastTO = TileObject.createQueryTileObject(layerName, tos[tos.length - 1].xyz,
                 srs.toString(), mime.getFormat(), parameters);
         fbs.get(lastTO);
-        is = lastTO.getBlob().getInputStream();
-        is2 = bytes.getInputStream();
-        try {
+        try(
+            InputStream is = lastTO.getBlob().getInputStream();
+            InputStream is2 = bytes.getInputStream();
+        ){
             assertTrue(IOUtils.contentEquals(is, is2));
-        } finally {
-            is.close();
-            is2.close();
         }
 
         TileObject midTO = TileObject.createQueryTileObject(layerName,
@@ -173,11 +182,11 @@ public class BlobStoreTest extends TestCase {
         fbs.get(midTO);
         Resource res = midTO.getBlob();
 
-        assertNull(res);
+        assertThat(res, nullValue());
     }
 
+    @Test
     public void testRenameLayer() throws Exception {
-        FileBlobStore fbs = setup();
         Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
         Map<String, String> parameters = new HashMap<String, String>();
         parameters.put("a", "x");
@@ -213,46 +222,28 @@ public class BlobStoreTest extends TestCase {
 
         EasyMock.verify(listener);
 
-        try {
-            fbs.rename(layerName, newLayerName);
-            fail("Expected StorageException, target dir already exists");
-        } catch (StorageException e) {
-            assertTrue(true);
-        }
-    }
+        expectedException.expect(StorageException.class);
+        fbs.rename(layerName, newLayerName);
+     }
 
-    public FileBlobStore setup() throws Exception {
-        File fh = new File(StorageBrokerTest.findTempDir() + File.separator + TEST_BLOB_DIR_NAME);
-
-        if (fh.exists()) {
-            FileUtils.deleteDirectory(fh);
-        }
-        if (!fh.exists() && !fh.mkdirs()) {
-            throw new StorageException("Unable to create " + fh.getAbsolutePath());
-        }
-
-        return new FileBlobStore(StorageBrokerTest.findTempDir() + File.separator
-                + TEST_BLOB_DIR_NAME);
-    }
-
+    @Test
     public void testLayerMetadata() throws Exception {
-        FileBlobStore fbs = setup();
 
         final String layerName = "TestLayer";
         final String key1 = "Test.Metadata.Property_1";
         final String key2 = "Test.Metadata.Property_2";
 
-        assertNull(fbs.getLayerMetadata(layerName, key1));
-        assertNull(fbs.getLayerMetadata(layerName, key2));
+        assertThat(fbs.getLayerMetadata(layerName, key1), nullValue());
+        assertThat(fbs.getLayerMetadata(layerName, key2), nullValue());
 
         fbs.putLayerMetadata(layerName, key1, "value 1");
         fbs.putLayerMetadata(layerName, key2, "value 2");
-        assertEquals("value 1", fbs.getLayerMetadata(layerName, key1));
-        assertEquals("value 2", fbs.getLayerMetadata(layerName, key2));
+        assertThat(fbs.getLayerMetadata(layerName, key1), equalTo("value 1"));
+        assertThat(fbs.getLayerMetadata(layerName, key2), equalTo("value 2"));
 
         fbs.putLayerMetadata(layerName, key1, "value 1_1");
         fbs.putLayerMetadata(layerName, key2, null);
-        assertEquals("value 1_1", fbs.getLayerMetadata(layerName, key1));
-        assertNull(fbs.getLayerMetadata(layerName, key2));
+        assertThat(fbs.getLayerMetadata(layerName, key1), equalTo("value 1_1"));
+        assertThat(fbs.getLayerMetadata(layerName, key2), nullValue());
     }
 }

@@ -2,16 +2,23 @@ package org.geowebcache.storage;
 
 import java.io.File;
 
-import junit.framework.TestCase;
-
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.storage.blobstore.file.FileBlobStore;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class StorageBrokerTest extends TestCase {
-    public static final String TEST_DB_NAME = "gwcTestStorageBroker";
+
+interface PerformanceTests {}
+
+public class StorageBrokerTest {
+    @Rule 
+    public TemporaryFolder blobDir = new TemporaryFolder();;
     
-    public static final String TEST_BLOB_DIR_NAME = "gwcTestBlobs";
+    public static final String TEST_DB_NAME = "gwcTestStorageBroker";
     
     public static final int THREAD_COUNT = 4;
     
@@ -23,23 +30,22 @@ public class StorageBrokerTest extends TestCase {
     
     public static final boolean RUN_PERFORMANCE_TESTS = false;
     
+    @Test
     public void testTileSingleThread() throws Exception {
-        if(! RUN_PERFORMANCE_TESTS)
-            return;
-        
-        StorageBroker sb = resetAndPrepStorageBroker();
+        Assume.assumeTrue(RUN_PERFORMANCE_TESTS);
+        resetAndPrepStorageBroker();
         
         for(int i=0;i<REPEAT_COUNT; i++) {
             runBasicTileTest(sb, i, "Uni");
         }
     }
     
+    @Test
     public void testTileMultiThread() throws Exception {        
-        if(! RUN_PERFORMANCE_TESTS)
-            return;
+        Assume.assumeTrue(RUN_PERFORMANCE_TESTS); 
+        resetAndPrepStorageBroker();
         
         System.out.println("\n");
-        StorageBroker sb = resetAndPrepStorageBroker();
         
         long iterations = REPEAT_COUNT;
         
@@ -66,21 +72,17 @@ public class StorageBrokerTest extends TestCase {
                 + THREAD_COUNT + " threads in parallel" );
     }
     
-    private StorageBroker resetAndPrepStorageBroker() throws Exception {
+    StorageBroker sb;
+    //@Before // TODO switch to using Categories for enabling/disabling tests and mark this @Before
+    public void resetAndPrepStorageBroker() throws Exception {
         System.out.println("Deleting old test database.");
 
-        String blobPath = findTempDir() + File.separator + TEST_BLOB_DIR_NAME;
-        System.out.println("Creating new blobstore in " + blobPath);
+        File blobDirs = blobDir.getRoot();
         
-        File blobDirs = new File(blobPath);
-        if(! blobDirs.exists() && ! blobDirs.mkdirs()) {
-            throw new StorageException("Unable to create " + blobPath);
-        }
-        
-        BlobStore blobStore = new FileBlobStore(blobPath);
+        BlobStore blobStore = new FileBlobStore(blobDirs.toString());
         TransientCache transCache = new TransientCache(100, 1024, 2000);
         
-        StorageBroker sb = new DefaultStorageBroker(blobStore);
+        sb = new DefaultStorageBroker(blobStore);
         
         //long[] xyz = {1L,2L,3L};
         Resource blob = new ByteArrayResource(new byte[20*1024]);
@@ -98,17 +100,11 @@ public class StorageBrokerTest extends TestCase {
         long stopInsert = System.currentTimeMillis();
         
         System.out.println(TILE_PUT_COUNT+ " inserts took " + Long.toString(stopInsert - startInsert) + "ms");
-        
-        return sb;
     }
     
     public static String findTempDir() throws Exception {
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        if(tmpDir == null || ! (new File(tmpDir)).canWrite()) {
-            throw new Exception("Temporary directory " 
-                    + tmpDir + " does not exist or is not writable.");
-        }
-        return tmpDir;
+        
+        return null;
     }
     
     private void runBasicTileTest(StorageBroker sb, long run, String name) throws StorageException {
