@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -648,7 +649,23 @@ public class FileBlobStore implements BlobStore {
         String name = decodeMetadataValue(props.getProperty(LAYER_NAME_META_KEY));
         return name;
     }
-    
+    String getGridsetFromDirectory(File directory) {
+        Properties props = getMetadata(getMetadataFile(directory));
+        String name = decodeMetadataValue(props.getProperty(GRIDSET_NAME_META_KEY));
+        return name;
+    }
+    Map<String, String> getParametersFromDirectory(File directory) {
+        final Properties props = getMetadata(getMetadataFile(directory));
+        final Map<String,String> parameters = new HashMap<>(props.size()-1);
+        final int prefix = PARAMETERS_NAME_META_KEY.length()+1;
+        for(Map.Entry<Object, Object> e: props.entrySet()){
+            if (((String)e.getKey()).startsWith(PARAMETERS_NAME_META_KEY)) {
+                parameters.put(((String)e.getKey()).substring(prefix), decodeMetadataValue((String)e.getValue()));
+            }
+        }
+        return parameters;
+    }
+   
     /**
      * @see org.geowebcache.storage.BlobStore#putLayerMetadata(java.lang.String, java.lang.String,
      *      java.lang.String)
@@ -707,6 +724,10 @@ public class FileBlobStore implements BlobStore {
         return getMetadata(metadataFile);
     }
 
+    void purgeTilesetDirs(Configuration config) {
+        
+    }
+    
     /**
      * @param metadataFile
      * @return

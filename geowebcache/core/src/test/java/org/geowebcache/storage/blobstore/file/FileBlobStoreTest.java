@@ -18,6 +18,7 @@
 package org.geowebcache.storage.blobstore.file;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -25,11 +26,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.easymock.classextension.EasyMock;
+import org.geowebcache.config.Configuration;
 import org.geowebcache.grid.SRS;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
@@ -43,6 +46,7 @@ import org.geowebcache.storage.blobstore.file.FileBlobStore;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -292,6 +296,80 @@ public class FileBlobStoreTest {
         assertThat(fbs.getLayerNameFromDirectory(layerDir), equalTo(layerName));
     }
     
+    @Test
+    public void testGridsetLookup() throws Exception {
+
+        final String layerName = "test:layer";
+        final String gridsetName = "EPSG:4326";
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        Map<String, String> parameters = new HashMap<String, String>();
+        TileObject to = TileObject.createCompleteTileObject(layerName, xyz, gridsetName,
+                "image/jpeg", parameters, bytes);
+        to.setId(11231231);
+
+        fbs.put(to);
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        File tilesetDir = new File(layerDir, "EPSG_4326_03");
+        assertThat(tilesetDir, exists());
+        assertThat(fbs.getGridsetFromDirectory(tilesetDir), equalTo(gridsetName));
+    }
+    @Test
+    public void testParametersLookup() throws Exception {
+
+        final String layerName = "test:layer";
+        final String gridsetName = "EPSG:4326";
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("a", "x");
+        parameters.put("b", "ø");
+        TileObject to = TileObject.createCompleteTileObject(layerName, xyz, gridsetName,
+                "image/jpeg", parameters, bytes);
+        to.setId(11231231);
+        
+        fbs.put(to);
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        File tilesetDir = new File(layerDir, "EPSG_4326_03_"+to.getParametersId());
+        assertThat(tilesetDir, exists());
+        assertThat(fbs.getParametersFromDirectory(tilesetDir), equalTo(parameters));
+    }
+    
+    @Test
+    public void testPurge() throws Exception {
+
+        final String layerName = "test:layer";
+        final String gridsetName = "EPSG:4326";
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("a", "x");
+        parameters.put("b", "ø");
+        TileObject to = TileObject.createCompleteTileObject(layerName, xyz, gridsetName,
+                "image/jpeg", parameters, bytes);
+        to.setId(11231231);
+        
+        fbs.put(to);
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        File tilesetDir = new File(layerDir, "EPSG_4326_03_"+to.getParametersId());
+        
+        Configuration config = EasyMock.createMock(Configuration.class);
+        
+        EasyMock.replay(config);
+        
+        fbs.purgeTilesetDirs(config);
+        
+        assertThat(tilesetDir, not(exists()));
+        
+        EasyMock.verify(config);
+    }
+   
     Matcher<File> exists() {
         return new BaseMatcher<File>(){
 
