@@ -1,4 +1,4 @@
-package org.geowebcache.blobstore.file;
+package org.geowebcache.storage.blobstore.file;
 
 import java.io.File;
 import java.io.IOException;

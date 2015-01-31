@@ -478,6 +478,9 @@ public class FileBlobStore implements BlobStore {
         
         if (create) {
             File parent = tilePath.getParentFile();
+            // Make the directories that need metadata
+            this.makeTileSetDir(stObj);
+            // Fill in the rest
             mkdirs(parent);
         }
         
@@ -621,6 +624,15 @@ public class FileBlobStore implements BlobStore {
     public String getLayerMetadata(final String layerName, final String key) {
         Properties metadata = getLayerMetadata(layerName);
         String value = metadata.getProperty(key);
+        value = decodeMetadataValue(value);
+        return value;
+    }
+
+    /**
+     * @param value
+     * @return
+     */
+    private String decodeMetadataValue(String value) {
         if (value != null) {
             try {
                 value = URLDecoder.decode(value, "UTF-8");
@@ -631,9 +643,9 @@ public class FileBlobStore implements BlobStore {
         return value;
     }
     
-    private String getLayerNameFromDirectory(File directory) {
+    String getLayerNameFromDirectory(File directory) {
         Properties props = getMetadata(getMetadataFile(directory));
-        String name = props.getProperty(LAYER_NAME_META_KEY);
+        String name = decodeMetadataValue(props.getProperty(LAYER_NAME_META_KEY));
         return name;
     }
     
@@ -727,6 +739,7 @@ public class FileBlobStore implements BlobStore {
     }
 
     private File getMetadataFile(final String layerName) {
+        makeLayerDir(layerName);
         File layerPath = getLayerPath(layerName);
         File metadataFile = getMetadataFile(layerPath);
         return metadataFile;

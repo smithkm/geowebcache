@@ -1,4 +1,4 @@
-package org.geowebcache.blobstore.file;
+package org.geowebcache.storage.blobstore.file;
 
 import org.geowebcache.storage.blobstore.file.FilePathUtils;
 

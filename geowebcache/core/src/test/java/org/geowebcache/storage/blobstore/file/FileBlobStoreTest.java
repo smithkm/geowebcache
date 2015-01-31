@@ -15,7 +15,7 @@
  * @author Arne Kepp / The Open Planning Project 2009
  *  
  */
-package org.geowebcache.storage;
+package org.geowebcache.storage.blobstore.file;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +35,21 @@ import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.mime.ImageMime;
 import org.geowebcache.mime.MimeType;
+import org.geowebcache.storage.BlobStoreListener;
+import org.geowebcache.storage.StorageException;
+import org.geowebcache.storage.TileObject;
+import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.blobstore.file.FileBlobStore;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class BlobStoreTest {
+public class FileBlobStoreTest {
     @Rule 
     public TemporaryFolder cacheDir = new TemporaryFolder();;
     @Rule 
@@ -49,7 +57,7 @@ public class BlobStoreTest {
 
     @Before
     public void setup() throws Exception {
-        fbs = new FileBlobStore(cacheDir.getRoot().toString());
+        fbs = new FileBlobStore(cacheDir.getRoot().getAbsolutePath());
     }
     
     FileBlobStore fbs;
@@ -157,7 +165,7 @@ public class BlobStoreTest {
         fbs.delete(trObj);
 
         // starting x and x + tos.length should have data, the remaining should not
-        TileObject firstTO = TileObject.createQueryTileObject(layerName, tos[0].xyz,
+        TileObject firstTO = TileObject.createQueryTileObject(layerName, tos[0].getXYZ(),
                 srs.toString(), mime.getFormat(), parameters);
         fbs.get(firstTO);
         try(
@@ -167,7 +175,7 @@ public class BlobStoreTest {
             assertTrue(IOUtils.contentEquals(is, is2));
         }
 
-        TileObject lastTO = TileObject.createQueryTileObject(layerName, tos[tos.length - 1].xyz,
+        TileObject lastTO = TileObject.createQueryTileObject(layerName, tos[tos.length - 1].getXYZ(),
                 srs.toString(), mime.getFormat(), parameters);
         fbs.get(lastTO);
         try(
@@ -178,7 +186,7 @@ public class BlobStoreTest {
         }
 
         TileObject midTO = TileObject.createQueryTileObject(layerName,
-                tos[(tos.length - 1) / 2].xyz, srs.toString(), mime.getFormat(), parameters);
+                tos[(tos.length - 1) / 2].getXYZ(), srs.toString(), mime.getFormat(), parameters);
         fbs.get(midTO);
         Resource res = midTO.getBlob();
 
@@ -245,5 +253,58 @@ public class BlobStoreTest {
         fbs.putLayerMetadata(layerName, key2, null);
         assertThat(fbs.getLayerMetadata(layerName, key1), equalTo("value 1_1"));
         assertThat(fbs.getLayerMetadata(layerName, key2), nullValue());
+    }
+    
+    
+    
+    @Test
+    public void testLayerNameLookup() throws Exception {
+
+        final String layerName = "test:layer";
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("a", "x");
+        parameters.put("b", "ø");
+        TileObject to = TileObject.createCompleteTileObject(layerName, xyz, "EPSG:4326",
+                "image/jpeg", parameters, bytes);
+        to.setId(11231231);
+
+        fbs.put(to);
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        assertThat(layerDir, exists());
+        assertThat(fbs.getLayerNameFromDirectory(layerDir), equalTo(layerName));
+    }
+    
+    @Test
+    public void testLayerNameLookupMetadataOnly() throws Exception {
+
+        final String layerName = "test:layer";
+        
+        final String key1 = "Test.Metadata.Property_1";
+
+        fbs.putLayerMetadata(layerName, key1, "value 1");
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        assertThat(layerDir, exists());
+        assertThat(fbs.getLayerNameFromDirectory(layerDir), equalTo(layerName));
+    }
+    
+    Matcher<File> exists() {
+        return new BaseMatcher<File>(){
+
+            @Override
+            public boolean matches(Object item) {
+                return ((File)item).exists();
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("file that exists");
+            }
+            
+        };
     }
 }
