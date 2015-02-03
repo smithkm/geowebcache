@@ -26,16 +26,24 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.commons.io.IOUtils;
 import org.easymock.classextension.EasyMock;
 import org.geowebcache.config.Configuration;
+import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.grid.GridSubset;
 import org.geowebcache.grid.SRS;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
+import org.geowebcache.layer.TileLayer;
 import org.geowebcache.mime.ImageMime;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.BlobStoreListener;
@@ -58,10 +66,32 @@ public class FileBlobStoreTest {
     public TemporaryFolder cacheDir = new TemporaryFolder();;
     @Rule 
     public ExpectedException expectedException = ExpectedException.none();
+    
+    
+    ExecutorService s;
+    // A bit of a hack here
+    void waitForPendingDeletes() throws InterruptedException, ExecutionException {
+        Future<?> f = s.submit(new Runnable() {
+
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+                
+            }});
+        f.get();
+    }
 
     @Before
     public void setup() throws Exception {
-        fbs = new FileBlobStore(cacheDir.getRoot().getAbsolutePath());
+        fbs = new FileBlobStore(cacheDir.getRoot().getAbsolutePath()){
+
+            @Override
+            ExecutorService createDeleteExecutorService() {
+                s = super.createDeleteExecutorService();
+                return s;
+            }
+            
+        };
     }
     
     FileBlobStore fbs;
@@ -325,8 +355,8 @@ public class FileBlobStoreTest {
         Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
         long[] xyz = { 1L, 2L, 3L };
         Map<String, String> parameters = new HashMap<String, String>();
-        parameters.put("a", "x");
-        parameters.put("b", "ø");
+        parameters.put("A", "x");
+        parameters.put("B", "ø");
         TileObject to = TileObject.createCompleteTileObject(layerName, xyz, gridsetName,
                 "image/jpeg", parameters, bytes);
         to.setId(11231231);
@@ -337,6 +367,31 @@ public class FileBlobStoreTest {
         File tilesetDir = new File(layerDir, "EPSG_4326_03_"+to.getParametersId());
         assertThat(tilesetDir, exists());
         assertThat(fbs.getParametersFromDirectory(tilesetDir), equalTo(parameters));
+    }
+    @Test
+    public void testParametersLookupCase() throws Exception {
+
+        final String layerName = "test:layer";
+        final String gridsetName = "EPSG:4326";
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("a", "x");
+        parameters.put("b", "ø");
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("A", "x");
+        expected.put("B", "ø");
+        TileObject to = TileObject.createCompleteTileObject(layerName, xyz, gridsetName,
+                "image/jpeg", parameters, bytes);
+        to.setId(11231231);
+        
+        fbs.put(to);
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        File tilesetDir = new File(layerDir, "EPSG_4326_03_"+to.getParametersId());
+        assertThat(tilesetDir, exists());
+        assertThat(fbs.getParametersFromDirectory(tilesetDir), equalTo(expected));
     }
     
     @Test
@@ -368,6 +423,58 @@ public class FileBlobStoreTest {
         assertThat(tilesetDir, not(exists()));
         
         EasyMock.verify(config);
+    }
+    
+    @Test
+    public void testPurgeZoomedTileSet() throws Exception {
+
+        final String layerName = "test:layer";
+        final String gridsetName = "EPSG:4326";
+        
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("A", "x");
+        parameters.put("B", "ø");
+        TileObject to = TileObject.createCompleteTileObject(layerName, xyz, gridsetName,
+                "image/jpeg", parameters, bytes);
+        to.setId(11231231);
+        
+        fbs.put(to);
+        
+        File layerDir = new File(cacheDir.getRoot(), "test_layer");
+        File tilesetDir = new File(layerDir, "EPSG_4326_03_"+to.getParametersId());
+        
+        TileLayer layer = EasyMock.createMock(TileLayer.class);
+        GridSubset subset = EasyMock.createMock(GridSubset.class);
+        ParameterFilter filterA = EasyMock.createMock(ParameterFilter.class);
+        ParameterFilter filterB = EasyMock.createMock(ParameterFilter.class);
+        BlobStoreListener listener = EasyMock.createMock(BlobStoreListener.class);
+        
+        
+        EasyMock.expect(layer.getName()).andStubReturn(layerName);
+        EasyMock.expect(layer.getGridSubset(gridsetName)).andStubReturn(subset);
+        EasyMock.expect(layer.getParameterFilters()).andStubReturn(Arrays.asList(filterA, filterB));
+        
+        EasyMock.expect(filterA.getKey()).andStubReturn("A");
+        EasyMock.expect(filterB.getKey()).andStubReturn("B");
+        
+        EasyMock.expect(filterA.apply("x")).andStubReturn("x");// OK
+        EasyMock.expect(filterB.apply("ø")).andStubReturn("o");// Changed
+        
+        listener.tileSetDeleted(layerName, gridsetName, null, to.getParametersId());EasyMock.expectLastCall().once();
+        
+        EasyMock.replay(layer, subset, filterA, filterB, listener);
+        
+        fbs.addListener(listener); 
+        
+        fbs.purgeZoomedTileSetDir(tilesetDir, layer);
+        
+        waitForPendingDeletes();
+        assertThat(tilesetDir, not(exists()));
+        
+        EasyMock.verify(layer, subset, filterA, filterB, listener);
     }
    
     Matcher<File> exists() {

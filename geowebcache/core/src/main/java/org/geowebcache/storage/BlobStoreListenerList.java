@@ -3,6 +3,8 @@ package org.geowebcache.storage;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.annotation.Nullable;
+
 public final class BlobStoreListenerList {
 
     private List<BlobStoreListener> listeners = new CopyOnWriteArrayList<BlobStoreListener>();
@@ -38,6 +40,11 @@ public final class BlobStoreListenerList {
             for (int i = 0; i < listeners.size(); i++) {
                 listeners.get(i).gridSubsetDeleted(layerName, gridSetId);
             }
+        }
+    }
+    public void sendTileSetDeleted(String layerName, String gridSetId, @Nullable String blobFormat, String parametersId) {
+        for (BlobStoreListener l : listeners) {
+            l.tileSetDeleted(layerName, gridSetId, blobFormat, parametersId);
         }
     }
 

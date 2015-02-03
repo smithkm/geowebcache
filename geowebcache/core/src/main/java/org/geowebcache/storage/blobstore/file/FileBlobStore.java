@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -42,6 +43,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.config.Configuration;
 import org.geowebcache.config.ConfigurationException;
+import org.geowebcache.filter.parameters.ParameterException;
+import org.geowebcache.filter.parameters.ParameterFilter;
 import org.geowebcache.io.FileResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.layer.TileLayer;
@@ -57,6 +60,8 @@ import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.util.FileUtils;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+
+import com.google.common.base.Preconditions;
 
 /**
  * See BlobStore interface description for details
@@ -108,7 +113,7 @@ public class FileBlobStore implements BlobStore {
         }
         
         stagingArea = new File(path, "_gwc_in_progress_deletes_");
-        createDeleteExecutorService();
+        deleteExecutorService = createDeleteExecutorService();
         issuePendingDeletes();
     }
 
@@ -133,12 +138,12 @@ public class FileBlobStore implements BlobStore {
                 pendingDeleteDirectory));
     }
 
-    private void createDeleteExecutorService() {
+    ExecutorService createDeleteExecutorService() {
         CustomizableThreadFactory tf;
         tf = new CustomizableThreadFactory("GWC FileStore delete directory thread-");
         tf.setDaemon(true);
         tf.setThreadPriority(Thread.MIN_PRIORITY);
-        deleteExecutorService = Executors.newFixedThreadPool(1);
+        return Executors.newFixedThreadPool(1);
     }
 
     /**
@@ -245,6 +250,14 @@ public class FileBlobStore implements BlobStore {
      */
     public boolean deleteByGridsetId(final String layerName, final String gridSetId)
             throws StorageException {
+        Preconditions.checkNotNull(gridSetId);
+        listeners.sendGridSubsetDeleted(layerName, gridSetId);
+        return deleteTileSetInternal(layerName, gridSetId, null);
+    }
+    
+    private boolean deleteTileSetInternal(final String layerName, final String gridSetId, final String paramHash)
+            throws StorageException {
+        Preconditions.checkNotNull(layerName);
 
         final File layerPath = getLayerPath(layerName);
         if (!layerPath.exists() || !layerPath.canWrite()) {
@@ -253,23 +266,27 @@ public class FileBlobStore implements BlobStore {
         }
         final String filteredGridSetId = filteredGridSetId(gridSetId);
 
-        File[] gridSubsetCaches = layerPath.listFiles(new FileFilter() {
+        File[] caches = layerPath.listFiles(new FileFilter() {
             public boolean accept(File pathname) {
                 if (!pathname.isDirectory()) {
                     return false;
                 }
                 String dirName = pathname.getName();
-                return dirName.startsWith(filteredGridSetId);
+                
+                if(gridSetId!=null && !dirName.startsWith(filteredGridSetId)) return false;
+                
+                if(paramHash!=null && !dirName.endsWith(paramHash)) return false;
+                
+                return true;
             }
         });
 
-        for (File gridSubsetCache : gridSubsetCaches) {
+        for (File cacheDir : caches) {
             String target = filteredLayerName(layerName) + "_"
-                    + gridSubsetCache.getName();
-            stageDelete(gridSubsetCache, target);
+                    + cacheDir.getName();
+            stageDelete(cacheDir, target);
         }
 
-        listeners.sendGridSubsetDeleted(layerName, gridSetId);
 
         return true;
     }
@@ -611,7 +628,7 @@ public class FileBlobStore implements BlobStore {
             File metadata = getMetadataFile(tsDir);
             putMetadata(GRIDSET_NAME_META_KEY, to.getGridSetId(), metadata);
             for(Map.Entry<String,  String> param: to.getParameters().entrySet()){
-                putMetadata(String.format("%s.%s", PARAMETERS_NAME_META_KEY,param.getKey()), param.getValue(), metadata);
+                putMetadata(String.format("%s.%s", PARAMETERS_NAME_META_KEY,param.getKey().toUpperCase()), param.getValue(), metadata);
             }
             return true;
         } else {
@@ -660,7 +677,7 @@ public class FileBlobStore implements BlobStore {
         final int prefix = PARAMETERS_NAME_META_KEY.length()+1;
         for(Map.Entry<Object, Object> e: props.entrySet()){
             if (((String)e.getKey()).startsWith(PARAMETERS_NAME_META_KEY)) {
-                parameters.put(((String)e.getKey()).substring(prefix), decodeMetadataValue((String)e.getValue()));
+                parameters.put(((String)e.getKey()).substring(prefix).toUpperCase(), decodeMetadataValue((String)e.getValue()));
             }
         }
         return parameters;
@@ -725,6 +742,37 @@ public class FileBlobStore implements BlobStore {
     }
 
     void purgeTilesetDirs(Configuration config) {
+        
+    }
+    
+    boolean isLegalValue(ParameterFilter f, String value) {
+        try {
+            return value.equals(f.apply(value));
+        } catch (ParameterException e) {
+            return false;
+        }
+    }
+    boolean isLegalParameterization(Collection<ParameterFilter> filters, Map<String, String> parameterization){
+        for(ParameterFilter f : filters){
+            if(!isLegalValue(f, parameterization.get(f.getKey().toUpperCase()))){
+                return false;
+            }
+        }
+        return true;
+    }
+    void purgeZoomedTileSetDir(File tileSetDir, TileLayer layer) throws StorageException {
+        String layerName = layer.getName();
+        assert getLayerNameFromDirectory(tileSetDir.getParentFile()).equals(layerName);
+        String cachedGridset = getGridsetFromDirectory(tileSetDir);
+        Map<String, String> parameterization = getParametersFromDirectory(tileSetDir);
+        layer.getGridSubset(cachedGridset);
+        if(!isLegalParameterization(layer.getParameterFilters(), parameterization)) {
+            String paramHash = FilePathGenerator.getParametersId(parameterization);
+            assert parameterization.isEmpty()||tileSetDir.getName().endsWith(paramHash);
+            
+            this.deleteTileSetInternal(layerName, cachedGridset, paramHash);
+            listeners.sendTileSetDeleted(layerName, cachedGridset, null, paramHash);
+        }
         
     }
     
