@@ -18,9 +18,12 @@ package org.geowebcache.layer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -76,14 +79,9 @@ public class TileLayerDispatcher implements DisposableBean {
     }
 
     public boolean layerExists(final String layerName) {
-        for (int i = 0; i < configs.size(); i++) {
-            Configuration configuration = configs.get(i);
-            TileLayer layer = configuration.getTileLayer(layerName);
-            if (layer != null) {
-                return true;
-            }
-        }
-        return false;
+        return configs.stream()
+                .map(config->config.getTileLayer(layerName))
+                .anyMatch(Objects::nonNull);
     }
 
     /**
@@ -93,18 +91,16 @@ public class TileLayerDispatcher implements DisposableBean {
      *             if no such layer exists
      */
     public TileLayer getTileLayer(final String layerName) throws GeoWebCacheException {
-        Preconditions.checkNotNull(layerName, "layerName is null");
-
-        for (int i = 0; i < configs.size(); i++) {
-            Configuration configuration = configs.get(i);
-            TileLayer layer = configuration.getTileLayer(layerName);
-            if (layer != null) {
-                return layer;
-            }
-        }
-        throw new GeoWebCacheException("Thread " + Thread.currentThread().getId()
-                + " Unknown layer " + layerName + ". Check the logfiles,"
-                + " it may not have loaded properly.");
+        Objects.requireNonNull(layerName, "layerName is null");
+        
+        return configs.stream()
+                .sequential()
+                .map(config->config.getTileLayer(layerName))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseThrow(()->new GeoWebCacheException("Thread " 
+                    + Thread.currentThread().getId() + " Unknown layer " + layerName 
+                    + ". Check the logfiles, it may not have loaded properly."));
     }
 
     /***
@@ -122,21 +118,14 @@ public class TileLayerDispatcher implements DisposableBean {
     }
 
     public int getLayerCount() {
-        int count = 0;
-        for (int i = 0; i < configs.size(); i++) {
-            Configuration configuration = configs.get(i);
-            count += configuration.getTileLayerCount();
-        }
-        return count;
+        return configs.stream()
+                .collect(Collectors.summingInt(Configuration::getTileLayerCount));
     }
 
     public Set<String> getLayerNames() {
-        Set<String> names = new HashSet<String>();
-        for (int i = 0; i < configs.size(); i++) {
-            Configuration configuration = configs.get(i);
-            names.addAll(configuration.getTileLayerNames());
-        }
-        return names;
+        return configs.stream()
+                .flatMap(config->config.getTileLayerNames().stream())
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -162,18 +151,15 @@ public class TileLayerDispatcher implements DisposableBean {
 
     private void initialize() {
         log.debug("Thread initLayers(), initializing");
-
-        for (Configuration config : configs) {
-            initialize(config);
-        }
+        
+        configs.stream()
+                .forEachOrdered(this::initialize);
+        
     }
 
     private int initialize(Configuration config) {
-        if (config == null) {
-            throw new IllegalStateException(
-                    "TileLayerDispatcher got a null GWC configuration object");
-        }
-
+        Objects.requireNonNull(config);
+        
         String configIdent = null;
         try {
             configIdent = config.getIdentifier();
@@ -233,12 +219,11 @@ public class TileLayerDispatcher implements DisposableBean {
      */
     public synchronized Configuration removeLayer(final String layerName)
             throws IllegalArgumentException {
-        for (Configuration config : configs) {
-            if (config.removeLayer(layerName)) {
-                return config;
-            }
-        }
-        return null;
+        return configs.stream()
+                .sequential()
+                .filter(config->config.removeLayer(layerName))
+                .findFirst()
+                .orElse(null);
     }
 
     /**

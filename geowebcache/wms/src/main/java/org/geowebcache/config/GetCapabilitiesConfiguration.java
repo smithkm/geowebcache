@@ -414,7 +414,8 @@ public class GetCapabilitiesConfiguration implements Configuration {
         this.gridSetBroker = gridSetBroker;
         List<TileLayer> tileLayers = getTileLayers(true);
         this.layers.clear();
-        for (TileLayer layer : tileLayers) {
+        
+        tileLayers.stream().forEachOrdered(layer->{
             layer.initialize(gridSetBroker);
             if(primaryConfig!=null) {
                 primaryConfig.setDefaultValues(layer);
@@ -423,8 +424,9 @@ public class GetCapabilitiesConfiguration implements Configuration {
                         "values as it does not have a global configuration to delegate to.");
             }
             layers.put(layer.getName(), layer);
-        }
-        return tileLayers.size();
+        });
+        
+        return layers.size();
     }
 
     /**
