@@ -32,10 +32,10 @@
       <!-- optional>true</optional -->
     </dependency>
 
-	<dependency>
-    	<groupId>commons-httpclient</groupId>
-    	<artifactId>commons-httpclient</artifactId>
-    	<version>3.1</version>
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>3.1</version>
     </dependency>
     
     <dependency>
@@ -44,9 +44,9 @@
     </dependency>
     
     <dependency>
-		<groupId>it.geosolutions.imageio-ext</groupId>
-		<artifactId>imageio-ext-streams</artifactId>
-	</dependency>
+      <groupId>it.geosolutions.imageio-ext</groupId>
+      <artifactId>imageio-ext-streams</artifactId>
+    </dependency>
 
     <!-- test dependencies -->
     <dependency>
@@ -79,8 +79,12 @@
       <artifactId>hamcrest-library</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>co.unruly</groupId>
+      <artifactId>java-8-matchers</artifactId>
+    </dependency>
   </dependencies>
-
+ 
   <build>
     <plugins>
     </plugins>

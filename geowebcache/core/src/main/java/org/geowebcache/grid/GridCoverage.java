@@ -9,10 +9,16 @@ public class GridCoverage {
     // The extent of the data. {minx,miny,maxx,maxy,zoomlevel}
     protected long[] coverage;
 
-    protected GridCoverage(long[] coverage) {
+    public GridCoverage(long[] coverage) {
         // TODO: should check that the coverage has exactly 5 elements.
         this.coverage = coverage;
     }
+    
+    public static final int X = 0;
+    public static final int Y = 1;
+    public static final int MIN = 0;
+    public static final int MAX = 2;
+    public static final int Z = 4;
 
     /**
      * Find the intersection of the given rectangle with the coverage
@@ -31,5 +37,28 @@ public class GridCoverage {
 
     public String toString() {
         return Arrays.toString(coverage);
+    }
+    
+    public long getMinX() {
+        return coverage[MIN+X];
+    }
+    public long getMinY() {
+        return coverage[MIN+Y];
+    }
+    public long getMaxX() {
+        return coverage[MAX+X];
+    }
+    public long getMaxY() {
+        return coverage[MAX+Y];
+    }
+    public long getZoom() {
+        return coverage[Z];
+    }
+    
+    public long[] toArray() {
+        return Arrays.copyOf(coverage, coverage.length);
+    }
+    public long[] toArrayNoZoom() {
+        return Arrays.copyOf(coverage, coverage.length-1);
     }
 }
