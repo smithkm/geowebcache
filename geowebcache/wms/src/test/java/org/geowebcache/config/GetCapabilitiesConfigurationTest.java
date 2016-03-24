@@ -101,6 +101,81 @@ public class GetCapabilitiesConfigurationTest {
     
     @SuppressWarnings("unchecked")
     @Test
+    public void testDelegateInitializingLayersWithCRSSpecificAutoGridset() throws Exception {
+        GridSetBroker broker = new GridSetBroker(false, false);
+        String url = "http://test/wms";
+        String mimeTypes = "image/png";
+        
+        final WebMapServer server = createMock(WebMapServer.class);
+        WMSCapabilities cap = createMock(WMSCapabilities.class);
+        WMSRequest req = createMock(WMSRequest.class);
+        OperationType gcOpType = createMock(OperationType.class);
+        XMLConfiguration globalConfig = createMock(XMLConfiguration.class);
+        Capture<TileLayer> layerCapture = new Capture<TileLayer>();
+        
+        GetCapabilitiesConfiguration config = 
+                new GetCapabilitiesConfiguration(broker, url, mimeTypes, "3x3", "false"){
+                    
+                    @Override
+                    WebMapServer getWMS() {
+                        return server;
+                    }
+            
+        };
+        
+        expect(server.getCapabilities()).andStubReturn(cap);
+        expect(cap.getRequest()).andStubReturn(req);
+        expect(req.getGetCapabilities()).andStubReturn(gcOpType);
+        expect(gcOpType.getGet()).andStubReturn(new URL("http://test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=getcapabilities"));
+        
+        expect(cap.getVersion()).andStubReturn("1.1.1");
+        
+        List<Layer> layers = new LinkedList<Layer>();
+        
+        Layer l = new Layer();
+        l.setName("Foo");
+        l.setLatLonBoundingBox(new CRSEnvelope());
+        l.setTitle("A Test Layer");
+        l.set_abstract("Test Abstract");
+        l.setBoundingBoxes(new CRSEnvelope("EPSG:3348", 4_000_000.0, 3_000_000.0, 5_000_000.0, 4_000_000.0));
+        layers.add(l);
+        
+        globalConfig.setDefaultValues(capture(layerCapture)); expectLastCall().times(layers.size());
+        
+        expect(cap.getLayerList()).andReturn(layers);
+        
+        replay(server, cap, req, gcOpType, globalConfig);
+        
+        config.setPrimaryConfig(globalConfig);
+        config.setLayerSpecificGridsets(false);
+        
+        config.initialize(broker);
+        
+        // Gridset was added to broker, Bounds taken from SpatialReference.org.  Actual bounds may 
+        // be significantly wider due to lack of a proper bounding polygon in the GeoTools CRS 
+        // database.
+        assertThat(broker.get("WMSAutoConfig:EPSG:3348"), hasProperty("bounds", containsBbox(2_365_553.3321, 1_851_486.3210, 9_683_442.0814, 5_606_232.2754)));
+        
+        assertThat(config.getLayers(), contains(
+                allOf(
+                    instanceOf(WMSLayer.class),
+                    hasProperty("metaInformation", 
+                        allOf(
+                            hasProperty("title", equalTo("A Test Layer")),
+                            hasProperty("description", equalTo("Test Abstract"))
+                        )
+                    ),
+                    hasProperty("gridSubsets",
+                        containsInAnyOrder(equalTo("WMSAutoConfig:EPSG:3348"), equalTo("GlobalCRS84Geometric"), equalTo("GoogleMapsCompatible"))
+                    ),
+                    hasGridSubset("WMSAutoConfig:EPSG:3348", subsetCoversExactly(4_000_000.0, 3_000_000.0, 5_000_000.0, 4_000_000.0))
+                )));
+        
+        verify(server, cap, req, gcOpType, globalConfig);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
     public void testDelegateInitializingLayersWithLayerSpecificAutoGridset() throws Exception {
         GridSetBroker broker = new GridSetBroker(false, false);
         String url = "http://test/wms";
@@ -147,8 +222,12 @@ public class GetCapabilitiesConfigurationTest {
         replay(server, cap, req, gcOpType, globalConfig);
         
         config.setPrimaryConfig(globalConfig);
+        config.setLayerSpecificGridsets(true);
         
         config.initialize(broker);
+        
+        // Gridset was added to broker, bounds should be exactly those of the layer
+        assertThat(broker.get("Foo:EPSG:3348"), hasProperty("bounds", equalTo(new BoundingBox(4_000_000.0, 3_000_000.0, 5_000_000.0, 4_000_000.0))));
         
         assertThat(config.getLayers(), contains(
                 allOf(
@@ -163,6 +242,81 @@ public class GetCapabilitiesConfigurationTest {
                         containsInAnyOrder(equalTo("Foo:EPSG:3348"), equalTo("GlobalCRS84Geometric"), equalTo("GoogleMapsCompatible"))
                     ),
                     hasGridSubset("Foo:EPSG:3348", subsetCoversExactly(4_000_000.0, 3_000_000.0, 5_000_000.0, 4_000_000.0))
+                )));
+        
+        verify(server, cap, req, gcOpType, globalConfig);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testDelegateInitializingLayersWithFoundGridset() throws Exception {
+        GridSetBroker broker = new GridSetBroker(false, false);
+        String url = "http://test/wms";
+        String mimeTypes = "image/png";
+        
+        final WebMapServer server = createMock(WebMapServer.class);
+        WMSCapabilities cap = createMock(WMSCapabilities.class);
+        WMSRequest req = createMock(WMSRequest.class);
+        OperationType gcOpType = createMock(OperationType.class);
+        XMLConfiguration globalConfig = createMock(XMLConfiguration.class);
+        Capture<TileLayer> layerCapture = new Capture<TileLayer>();
+        
+        GetCapabilitiesConfiguration config = 
+                new GetCapabilitiesConfiguration(broker, url, mimeTypes, "3x3", "false"){
+                    
+                    @Override
+                    WebMapServer getWMS() {
+                        return server;
+                    }
+            
+        };
+        
+        config.setLayerSpecificGridsets(false);
+        
+        expect(server.getCapabilities()).andStubReturn(cap);
+        expect(cap.getRequest()).andStubReturn(req);
+        expect(req.getGetCapabilities()).andStubReturn(gcOpType);
+        expect(gcOpType.getGet()).andStubReturn(new URL("http://test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=getcapabilities"));
+        
+        expect(cap.getVersion()).andStubReturn("1.1.1");
+        
+        List<Layer> layers = new LinkedList<Layer>();
+        
+        Layer l = new Layer();
+        l.setName("Foo");
+        l.setLatLonBoundingBox(new CRSEnvelope());
+        l.setTitle("A Test Layer");
+        l.set_abstract("Test Abstract");
+        l.setBoundingBoxes(new CRSEnvelope("EPSG:3348", 4_000_000.0, 3_000_000.0, 5_000_000.0, 4_000_000.0));
+        layers.add(l);
+        
+        globalConfig.setDefaultValues(capture(layerCapture)); expectLastCall().times(layers.size());
+        
+        GridSet expectedGridset = GridSetFactory.createGridSet("TestGridset", SRS.getSRS(3348), new BoundingBox(2_365_553.3321, 1_851_486.3210, 9_683_442.0814, 5_606_232.2754), false, 11, 1.0d, GridSetFactory.DEFAULT_PIXEL_SIZE_METER, 256, 256, false);
+        broker.put(expectedGridset);
+        
+        expect(cap.getLayerList()).andReturn(layers);
+        
+        replay(server, cap, req, gcOpType, globalConfig);
+        
+        config.setPrimaryConfig(globalConfig);
+        
+        config.initialize(broker);
+        
+        // Check that the gridset we added was used.
+        assertThat(config.getLayers(), contains(
+                allOf(
+                    instanceOf(WMSLayer.class),
+                    hasProperty("metaInformation", 
+                        allOf(
+                            hasProperty("title", equalTo("A Test Layer")),
+                            hasProperty("description", equalTo("Test Abstract"))
+                        )
+                    ),
+                    hasProperty("gridSubsets",
+                        containsInAnyOrder(equalTo("TestGridset"), equalTo("GlobalCRS84Geometric"), equalTo("GoogleMapsCompatible"))
+                    ),
+                    hasGridSubset("TestGridset", subsetCoversExactly(4_000_000.0, 3_000_000.0, 5_000_000.0, 4_000_000.0))
                 )));
         
         verify(server, cap, req, gcOpType, globalConfig);

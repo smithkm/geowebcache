@@ -26,9 +26,14 @@ public class GridSubsetFactory {
     private static Log log = LogFactory.getLog(GridSubsetFactory.class);
 
     public static GridSubset createGridSubSet(GridSet gridSet) {
-
-        GridSubset ret = createGridSubSet(gridSet, gridSet.getOriginalExtent(), 0,
-                gridSet.getGridLevels().length - 1);
+        
+        GridSubset ret = createGridSubSet(gridSet, gridSet.getOriginalExtent());
+        return ret;
+    }
+    
+    public static GridSubset createGridSubSet(GridSet gridSet, BoundingBox extent) {
+        
+        GridSubset ret = createGridSubSet(gridSet, extent, 0, gridSet.getNumLevels() - 1);
         return ret;
     }
 
