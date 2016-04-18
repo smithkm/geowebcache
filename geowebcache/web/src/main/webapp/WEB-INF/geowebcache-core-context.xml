@@ -7,6 +7,8 @@
 
   <bean id="geoWebCacheExtensions" class="org.geowebcache.GeoWebCacheExtensions"/>
   
+  <bean id="webResources" class="org.geowebcache.bundletest.TestBundle"/>
+  
   <bean id="gwcAppCtx" class="org.geowebcache.util.ApplicationContextProvider" />
   
   <!-- The location of a static configuration file for GeoWebCache. 
