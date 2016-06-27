@@ -13,7 +13,7 @@
     <gt.version>16-SNAPSHOT</gt.version>
     <jts.version>1.13</jts.version>
     <spring.version>4.2.5.RELEASE</spring.version>
-    <restlet.version>1.0.8</restlet.version>
+    <restlet.version>2.0.9</restlet.version>
     <xstream.version>1.4.7</xstream.version>
     <spring.security.version>4.0.4.RELEASE</spring.security.version>
     <commons-logging.version>1.1.1</commons-logging.version>
@@ -305,44 +305,38 @@
 
     <!-- restlet.org dependencies -->
     <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet</artifactId>
       <version>${restlet.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>com.noelios.restlet</groupId>
-      <artifactId>com.noelios.restlet</artifactId>
+      <groupId>org.restlet.jse</groupId>
+      <artifactId>org.restlet.ext.simple</artifactId>
       <version>${restlet.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>com.noelios.restlet</groupId>
-      <artifactId>com.noelios.restlet.ext.simple</artifactId>
-      <version>${restlet.version}</version>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet.ext.freemarker</artifactId>
       <version>${restlet.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet.ext.spring</artifactId>
       <version>${restlet.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet.ext.json</artifactId>
       <version>${restlet.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>com.noelios.restlet</groupId>
-      <artifactId>com.noelios.restlet.ext.servlet</artifactId>
+      <groupId>org.restlet.jse</groupId>
+      <artifactId>org.restlet.ext.servlet</artifactId>
       <version>${restlet.version}</version>
     </dependency>
     

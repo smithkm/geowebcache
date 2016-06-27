@@ -31,44 +31,33 @@
 
     <!-- restlet.org dependencies -->
     <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.noelios.restlet</groupId>
-      <artifactId>com.noelios.restlet</artifactId>
-      <exclusions>
-       <exclusion>
-         <groupId>javax.servlet</groupId>
-         <artifactId>servlet-api</artifactId>
-       </exclusion>
-      </exclusions>
+      <groupId>org.restlet.jse</groupId>
+      <artifactId>org.restlet.ext.simple</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.noelios.restlet</groupId>
-      <artifactId>com.noelios.restlet.ext.simple</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet.ext.freemarker</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet.ext.spring</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet</groupId>
+      <groupId>org.restlet.jse</groupId>
       <artifactId>org.restlet.ext.json</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.noelios.restlet</groupId>
-      <artifactId>com.noelios.restlet.ext.servlet</artifactId>
+      <groupId>org.restlet.jse</groupId>
+      <artifactId>org.restlet.ext.servlet</artifactId>
       <exclusions>
        <exclusion>
          <groupId>javax.servlet</groupId>
