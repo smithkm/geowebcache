@@ -31,32 +31,32 @@
 
     <!-- restlet.org dependencies -->
     <dependency>
-      <groupId>org.restlet.jse</groupId>
+      <groupId>org.restlet.jee</groupId>
       <artifactId>org.restlet</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet.jse</groupId>
+      <groupId>org.restlet.jee</groupId>
       <artifactId>org.restlet.ext.simple</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet.jse</groupId>
+      <groupId>org.restlet.jee</groupId>
       <artifactId>org.restlet.ext.freemarker</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet.jse</groupId>
+      <groupId>org.restlet.jee</groupId>
       <artifactId>org.restlet.ext.spring</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet.jse</groupId>
+      <groupId>org.restlet.jee</groupId>
       <artifactId>org.restlet.ext.json</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.restlet.jse</groupId>
+      <groupId>org.restlet.jee</groupId>
       <artifactId>org.restlet.ext.servlet</artifactId>
       <exclusions>
        <exclusion>
