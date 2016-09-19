@@ -36,7 +36,26 @@ import org.geowebcache.util.ServletUtils;
 import org.springframework.util.Assert;
 
 public class Demo {
-
+    
+    static void bbox2OLExtent(StringBuffer out, BoundingBox bbox) {
+        try {
+            bbox2OLExtent((Appendable)out, bbox);
+        } catch (IOException e) {
+            // Should never happen
+        }
+    }
+    static void bbox2OLExtent(Appendable out, BoundingBox bbox) throws IOException {
+        out.append("[");
+        out.append(Double.toString(bbox.getMinX()));
+        out.append(", ");
+        out.append(Double.toString(bbox.getMinY()));
+        out.append(", ");
+        out.append(Double.toString(bbox.getMaxX()));
+        out.append(", ");
+        out.append(Double.toString(bbox.getMaxY()));
+        out.append("]");
+    }
+    
     public static void makeMap(TileLayerDispatcher tileLayerDispatcher,
             GridSetBroker gridSetBroker, String action, HttpServletRequest request,
             HttpServletResponse response) throws GeoWebCacheException {
@@ -235,6 +254,8 @@ public class Demo {
         BoundingBox zoomBounds = gridSubset.getOriginalExtent();
         
         StringBuffer buf = new StringBuffer();
+        
+        MimeType format = MimeType.createFromFormat(formatStr);
 
         String res = "resolutions: " + Arrays.toString(gridSubset.getResolutions()) + ",\n";
 
@@ -328,7 +349,7 @@ public class Demo {
                 .append(gridSubset.getSRS().toString())
                 .append("');\n");
         buf.append("var projectionExtent = projection.getExtent();\n");
-        buf.append("var size = ol.extent.getWidth(projectionExtent) / 256;\n");
+        buf.append("var size = ol.extent.getWidth(projectionExtent) / ").append(gridSubset.getTileWidth()).append(";\n");
         buf.append("var resolutions = ")
                 .append(Arrays.toString(gridSubset.getResolutions()))
                 .append(";\n");
@@ -372,16 +393,21 @@ public class Demo {
                     .append(bbox.getMinX()).append(", ")
                     .append(bbox.getMaxY()).append("],\n");
         }
+        buf.append("      extent: ");
+        bbox2OLExtent(buf, gridSubset.getOriginalExtent());
+        buf.append(",\n");
         buf.append("      resolutions: resolutions,\n"
                 + "      matrixIds: params['TILEMATRIX']\n"
                 + "    }),\n"
                 + "    style: params['STYLE'],\n"
-                + "    wrapX: true\n"
+                + "    wrapX: false\n"
                 + "  });\n"
                 + "  return source;\n"
                 + "}\n"
-                + "\n"
-                + "var layer = new ol.layer.Tile({\n"
+                + "\n");
+        buf.append("var layer = new ")
+            .append(format.isVector()?"ol.layer.VectorTile":"ol.layer.Tile")
+            .append("({\n"
                 + "  source: constructSource()\n"
                 + "});\n"
                 + "\n"
