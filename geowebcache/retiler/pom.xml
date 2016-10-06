@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <!-- mvn -Dtest=StorageBrokerTest -Dmaven.test.jvmargs='-XX:+HeapDumpOnOutOfMemoryError -Xms32m -Xmx32m' test -->
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.geowebcache</groupId>
+    <artifactId>geowebcache</artifactId>
+    <version>1.10-SNAPSHOT</version><!-- GWC VERSION -->
+  </parent>
+  <groupId>org.geowebcache</groupId>
+  <artifactId>gwc-retiler</artifactId>
+  <packaging>jar</packaging>
+  <name>gwc-retiler</name>
+  <url>http://geowebcache.org</url>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.geowebcache</groupId>
+      <artifactId>gwc-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-referencing</artifactId>
+      <version>${gt.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-api</artifactId>
+      <version>${gt.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+    </dependency>
+
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-integration</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymockclassextension</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>xmlunit</groupId>
+      <artifactId>xmlunit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+	<!-- Thijs Brentjens: for security fixes, OWASP library-->
+	<dependency>
+	  <groupId>org.owasp.encoder</groupId>
+	  <artifactId>encoder</artifactId>
+	  <version>1.1</version>
+	</dependency>
+
+  </dependencies>
+
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- if we're using the dummy api, we should disable all tests -->
+          <excludes>
+            <exclude>**/*PerfTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
