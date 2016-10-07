@@ -3,6 +3,7 @@ package org.geowebcache.retiler;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -34,7 +35,14 @@ import org.opengis.referencing.operation.TransformException;
 
 public class Retiler {
     private static Log log = LogFactory.getLog(Retiler.class);
+    @SuppressWarnings("rawtypes")
+    private TileManipulator manip;
     
+    public Retiler(@SuppressWarnings("rawtypes") TileManipulator manip) {
+        super();
+        this.manip = manip;
+    }
+
     public void retile(ConveyorTile conv, TileLayer layer) {
         BoundingBox bbox = conv.getGridSubset().boundsFromIndex(conv.getTileIndex());
         SRS requestSrs = conv.getGridSubset().getSRS();
@@ -86,7 +94,7 @@ public class Retiler {
         return unreference(env.transform(srs2crs(dest), false));
     }
     
-    public long[] neededTiles(BoundingBox bbox, SRS srs, GridSubset gridSubset, int zoom)
+    public static long[] neededTiles(BoundingBox bbox, SRS srs, GridSubset gridSubset, int zoom)
     throws NoSuchAuthorityCodeException, FactoryException, TransformException {
         BoundingBox neededBbox = reprojectBbox(bbox, srs, gridSubset.getSRS());
         return gridSubset.getCoverageIntersection(zoom, neededBbox);
@@ -110,13 +118,11 @@ public class Retiler {
         return conv;
     }
     
-    public Resource getTile(BoundingBox bbox, SRS srs, TileLayer layer, GridSubset gridSubset)
+    public Resource getTile(BoundingBox bbox, SRS srs, TileLayer layer, GridSubset gridSubset, MimeType mime, Map<String, String> parameters, int zoom)
     throws NoSuchAuthorityCodeException, FactoryException, TransformException, GeoWebCacheException, IOException {
-        @SuppressWarnings("rawtypes")
-        TileManipulator manip = null;
-        final int zoom = 0;
-        final MimeType mime = null;
-        final Map<String, String> parameters = Collections.emptyMap();
+        if(Objects.isNull(layer.getGridSubset(gridSubset.getName()))) {
+            throw new IllegalArgumentException(String.format("Layer %s does not have a GridSubset %s", layer.getName(), gridSubset.getName()));
+        }
         
         final long[] needed = neededTiles(bbox, srs, gridSubset, zoom);
         try{
