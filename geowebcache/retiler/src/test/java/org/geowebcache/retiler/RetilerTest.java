@@ -14,7 +14,9 @@ import static org.hamcrest.integration.EasyMock2Adapter.adapt;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
@@ -34,10 +36,10 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
-
+import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-
+import org.apache.commons.lang.ArrayUtils;
 import org.easymock.classextension.EasyMock;
 
 public class RetilerTest {
@@ -218,8 +220,23 @@ public class RetilerTest {
         adapt(
                 both(baseConveyorMatcher)
                 .and(hasProperty("tileIndex",
-                        arrayContaining(tileIndex))));
+                        tileIndex(tileIndex))));
         return null;
+    }
+    
+    public static Matcher<long[]> tileIndex(final long[] index) {
+        return new CustomMatcher<long[]>(String.format("Tile Index array [<%d>, <%d>, <%d>]",index[0], index[1], index[2])) {
+            
+            @Override
+            public boolean matches(Object item) {
+                return Arrays.equals(index, (long[]) item);
+            }
+            
+        };
+    }
+    
+    public static Matcher<long[]> tileIndex(final long x,final long y, final long z) {
+        return tileIndex(new long[]{x,y,z});
     }
     
     @Test
@@ -267,19 +284,20 @@ public class RetilerTest {
                 replay(t,r);
                 try {
                     expect(layer.getTile(tile(baseConveyorMatcher, tileIndex))).andReturn(t);
+                    expect(manip.load(r)).andReturn(n);
                 } catch (GeoWebCacheException | IOException e) {
                     fail("This should not happen");
                 }
             });
             
-        
+        expect(manip.merge(EasyMock.aryEq(new Long[][]{{1301L, 1302L, 1303L, 1304L, 1305L},{1173L, 1174L, 1175L, 1176L, 1177L}}))).andReturn(42L);
         replay(srs1, srs2, subset, gridset, manip, layer);
         
         Retiler retiler = new Retiler(manip);
         
         Resource res = retiler.getTile(bbox, srs1, layer, subset, ImageMime.png, Collections.emptyMap(), 6);
         
-        assertThat(res, equalTo(null /* TODO */));
+        assertThat(res, equalTo(42L));
         
         verify(srs1, srs2, subset, gridset, manip, layer);
     }

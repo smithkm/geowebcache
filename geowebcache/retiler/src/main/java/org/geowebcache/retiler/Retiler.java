@@ -126,25 +126,28 @@ public class Retiler {
         
         final long[] needed = neededTiles(bbox, srs, gridSubset, zoom);
         try{
-            Object[][] tileGrid = (Object[][])LongStream.rangeClosed(needed[0], needed[2])
+            Object[][] tileGrid = LongStream.rangeClosed(needed[1], needed[3])
                 .parallel()
-                .mapToObj(x -> LongStream.rangeClosed(needed[1], needed[3])
-                    .mapToObj(y -> makeConveyor(
+                .mapToObj(y -> LongStream.rangeClosed(needed[0], needed[2])
+                    .mapToObj(x -> makeConveyor(
                         layer.getId(), 
                         gridSubset.getGridSet().getName(), 
                         x, y, zoom, 
                         mime, 
                         parameters))
+                    .peek(System.out::println)
                     .map(t -> {
                         try {
-                            layer.getTile(t);
+                            t=layer.getTile(t);
                             return t.getBlob();
                         } catch (GeoWebCacheException | IOException e) {
                             throw new RuntimeException(e);
                         }
                     })
-                    .toArray())
-                .toArray();
+                    .peek(System.out::println)
+                    .map(manip::load)
+                    .toArray(Object[]::new))
+                .toArray(Object[][]::new);
             manip.merge(tileGrid);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof GeoWebCacheException) {
