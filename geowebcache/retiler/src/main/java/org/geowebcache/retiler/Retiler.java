@@ -126,10 +126,10 @@ public class Retiler {
         
         final long[] needed = neededTiles(bbox, srs, gridSubset, zoom);
         try{
-            Object[][] tileGrid = (Object[][])LongStream.rangeClosed(needed[0], needed[2])
+            Object[][] tileGrid = LongStream.rangeClosed(needed[1], needed[3])
                 .parallel()
-                .mapToObj(x -> LongStream.rangeClosed(needed[1], needed[3])
-                    .mapToObj(y -> makeConveyor(
+                .mapToObj(y -> LongStream.rangeClosed(needed[0], needed[2])
+                    .mapToObj(x -> makeConveyor(
                         layer.getId(), 
                         gridSubset.getGridSet().getName(), 
                         x, y, zoom, 
@@ -137,15 +137,17 @@ public class Retiler {
                         parameters))
                     .map(t -> {
                         try {
-                            layer.getTile(t);
-                            return t.getBlob();
+                            return layer.getTile(t);
                         } catch (GeoWebCacheException | IOException e) {
-                            throw new RuntimeException(e);
+                            throw new RuntimeException(e); // TODO do something more specific here
                         }
                     })
-                    .toArray())
-                .toArray();
-            manip.merge(tileGrid);
+                    .map(ConveyorTile::getBlob)
+                    .map(manip::load)
+                    .toArray(Object[]::new))
+                .toArray(Object[][]::new);
+            Object combinedTile = manip.merge(tileGrid);
+            Object projectedTile = manip.reproject(combinedTile, gridset2crs(gridSubset.getGridSet()), srs2crs(srs));
         } catch (RuntimeException e) {
             if (e.getCause() instanceof GeoWebCacheException) {
                 throw (GeoWebCacheException) e.getCause();

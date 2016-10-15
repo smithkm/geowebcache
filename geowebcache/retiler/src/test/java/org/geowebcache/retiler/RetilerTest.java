@@ -1,5 +1,6 @@
 package org.geowebcache.retiler;
 
+import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.classextension.EasyMock.createMock;
 import static org.easymock.classextension.EasyMock.replay;
@@ -8,13 +9,16 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.integration.EasyMock2Adapter.adapt;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
@@ -35,9 +39,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.CustomMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 
+import org.easymock.IMocksControl;
 import org.easymock.classextension.EasyMock;
 
 public class RetilerTest {
@@ -214,24 +222,73 @@ public class RetilerTest {
         verify(srs1);
     }
     
+    static Matcher<long[]> tileIndex(final long x, final long y, final long z) {
+        return tileIndex(is(x), is(y), is(z));
+    }
+    
+    static Matcher<long[]> tileIndex(final long[] idx) {
+        return tileIndex(idx[0], idx[1], idx[2]);
+    }
+    
+    static Matcher<long[]> tileIndex(final Matcher<Long> x, final Matcher<Long> y, final Matcher<Long> z) {
+        return new BaseMatcher<long[]>() {
+            
+            @Override
+            public boolean matches(Object item) {
+                if(item instanceof long[]) {
+                    return ((long[]) item).length==3 
+                            && x.matches(((long[]) item)[0])
+                            && y.matches(((long[]) item)[1])
+                            && z.matches(((long[]) item)[2]);
+                } else {
+                    return false;
+                }
+            }
+            
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Tile index x: ")
+                    .appendDescriptionOf(x)
+                    .appendText(" y: ")
+                    .appendDescriptionOf(y)
+                    .appendText(" zoom: ")
+                    .appendDescriptionOf(z);
+            }
+            
+        };
+    }
+    
     ConveyorTile tile(Matcher<Object> baseConveyorMatcher, long[] tileIndex) {
         adapt(
                 both(baseConveyorMatcher)
                 .and(hasProperty("tileIndex",
-                        arrayContaining(tileIndex))));
+                        tileIndex(tileIndex))));
+        return null;
+    }
+    
+    static Long[][] tileMatrix(final Long[][] matrix) {
+        adapt(arrayContaining(
+                Arrays.stream(matrix)
+                    .map(row->
+                        arrayContaining(
+                            Arrays.stream(row)
+                                .map(Matchers::is)
+                                .collect(Collectors.toList())))
+                    .collect(Collectors.toList())));
         return null;
     }
     
     @Test
     public void testGetTile() throws Exception {
-        SRS srs1 = createMock("srs1", SRS.class);
-        SRS srs2 = createMock("srs2", SRS.class);
+        IMocksControl control = EasyMock.createControl();
+        SRS srs1 = control.createMock("srs1", SRS.class);
+        SRS srs2 = control.createMock("srs2", SRS.class);
         @SuppressWarnings("rawtypes")
-        TileManipulator manip = createMock("manip", TileManipulator.class);
-        TileLayer layer = createMock("layer", TileLayer.class);
+        TileManipulator manip = control.createMock("manip", TileManipulator.class);
+        TileLayer layer = control.createMock("layer", TileLayer.class);
         
-        GridSubset subset = createMock("subset", GridSubset.class);
-        GridSet gridset = createMock("gridset", GridSet.class);
+        GridSubset subset = control.createMock("subset", GridSubset.class);
+        GridSet gridset = control.createMock("gridset", GridSet.class);
         
         BoundingBox bbox =  new BoundingBox(-1185205.40442546d, 48360.7622934747d, -691105.548875919d, 260986.86576161d);
         BoundingBox expectedBbox =  new BoundingBox(-119.090148363291d, 60.4247730085304d, -108.566718091162d, 63.6290747405827d);
@@ -241,11 +298,13 @@ public class RetilerTest {
         expect(subset.getSRS()).andStubReturn(srs2);
         expect(subset.getName()).andStubReturn("WGS84Test");
         expect(gridset.getName()).andStubReturn("WGS84Test");
+        expect(gridset.getSrs()).andStubReturn(srs2);
         expect(layer.getGridSubset("WGS84Test")).andStubReturn(subset);
         expect(layer.getId()).andStubReturn("TestLayer");
         expect(subset.getGridSet()).andStubReturn(gridset);
         
-        expect(subset.getCoverageIntersection(6, expectedBbox)).andStubReturn(new long[]{21L,53L,25L,54L,6L});
+        expect(subset.getCoverageIntersection(6, expectedBbox))
+            .andStubReturn(new long[]{21L,53L,25L,54L,6L});
         
         final Matcher<Object> baseConveyorMatcher = allOf(
                 hasProperty("gridSetId", is("WGS84Test")),
@@ -260,28 +319,44 @@ public class RetilerTest {
                     .mapToObj(x->new long[]{x,y,6L})
                     )
             .forEach(tileIndex->{
-                final Long n = (63-tileIndex[1])*128+tileIndex[0];
-                ConveyorTile t = createMock(String.format("tile_%d_%d", tileIndex[0], tileIndex[1]), ConveyorTile.class);
-                Resource r = createMock(String.format("resource_%d_%d", tileIndex[0], tileIndex[1]), Resource.class);
+                final Long n = tileIndex[0]*1000+tileIndex[1];
+                final ConveyorTile t = control.createMock(String.format("tile_%d_%d", tileIndex[0], tileIndex[1]), ConveyorTile.class);
+                final Resource r = control.createMock(String.format("resource_%d_%d", tileIndex[0], tileIndex[1]), Resource.class);
                 expect(t.getBlob()).andStubReturn(r);
-                replay(t,r);
+                expect(manip.load(r)).andReturn(n);
                 try {
                     expect(layer.getTile(tile(baseConveyorMatcher, tileIndex))).andReturn(t);
                 } catch (GeoWebCacheException | IOException e) {
                     fail("This should not happen");
                 }
             });
-            
         
-        replay(srs1, srs2, subset, gridset, manip, layer);
+        final Long merged = 100L;
+        final Long projected = 101L;
+        final Long cropped = 102L;
+        final int tileSize = 256;
+        
+        expect(manip.bounds(merged)).andStubReturn(new TileBounds(0,0, tileSize*2, tileSize*5));
+        expect(manip.merge(tileMatrix(new Long[][]{
+            {21053L, 22053L, 23053L, 24053L, 25053L},
+            {21054L, 22054L, 23054L, 24054L, 25054L}})))
+            .andReturn(merged);
+        
+        expect(manip.reproject(eq(merged), eq(CRS.decode("EPSG:6004326")), eq(CRS.decode("EPSG:6042101"))))
+            .andReturn(projected);
+        
+        expect(manip.crop(eq(projected), eq(new TileBounds(0,0,1,1))))
+            .andReturn(cropped);
+        
+        control.replay();
         
         Retiler retiler = new Retiler(manip);
         
         Resource res = retiler.getTile(bbox, srs1, layer, subset, ImageMime.png, Collections.emptyMap(), 6);
         
-        assertThat(res, equalTo(null /* TODO */));
+        assertThat(res, equalTo(null));
         
-        verify(srs1, srs2, subset, gridset, manip, layer);
+        control.verify();
     }
 
 }
