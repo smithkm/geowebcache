@@ -1,7 +1,9 @@
 package org.geowebcache.retiler;
 
+import static org.easymock.EasyMock.aryEq;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.same;
 import static org.easymock.classextension.EasyMock.createMock;
 import static org.easymock.classextension.EasyMock.replay;
 import static org.easymock.classextension.EasyMock.verify;
@@ -37,6 +39,7 @@ import org.geowebcache.mime.ImageMime;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import org.hamcrest.BaseMatcher;
@@ -312,7 +315,8 @@ public class RetilerTest {
                 hasProperty("mimeType", is(ImageMime.png)),
                 hasProperty("fullParameters", is(Collections.emptyMap()))
                 );
-        
+        double[] xWorld = {-120.9375, -118.1250, -115.3125, -112.5000, -109.6875, -106.8750};
+        double[] yWorld = {61.8750, 64.6875, 59.0625};
         LongStream.rangeClosed(53,54)
             .boxed()
             .flatMap(y->LongStream.rangeClosed(21,25)
@@ -323,10 +327,22 @@ public class RetilerTest {
                 final ConveyorTile t = control.createMock(String.format("tile_%d_%d", tileIndex[0], tileIndex[1]), ConveyorTile.class);
                 final Resource r = control.createMock(String.format("resource_%d_%d", tileIndex[0], tileIndex[1]), Resource.class);
                 expect(t.getBlob()).andStubReturn(r);
-                expect(manip.load(r)).andReturn(n);
+                expect(subset.boundsFromIndex(aryEq(tileIndex)))
+                    .andStubReturn(new BoundingBox(
+                            xWorld[(int) (tileIndex[0]-21)], 
+                            yWorld[(int) (tileIndex[1]-53)], 
+                            xWorld[(int) (tileIndex[0]-20)], 
+                            yWorld[(int) (tileIndex[1]-52)]));
                 try {
+                    expect(manip.load(same(r), eq(new ReferencedEnvelope(
+                            xWorld[(int) (tileIndex[0]-21)],
+                            xWorld[(int) (tileIndex[0]-20)],
+                            yWorld[(int) (tileIndex[1]-53)],
+                            yWorld[(int) (tileIndex[1]-52)],
+                            CRS.decode("EPSG:6004326")
+                            )))).andReturn(n);
                     expect(layer.getTile(tile(baseConveyorMatcher, tileIndex))).andReturn(t);
-                } catch (GeoWebCacheException | IOException e) {
+                } catch (GeoWebCacheException | IOException | FactoryException e) {
                     fail("This should not happen");
                 }
             });
@@ -342,7 +358,7 @@ public class RetilerTest {
             {21054L, 22054L, 23054L, 24054L, 25054L}})))
             .andReturn(merged);
         
-        expect(manip.reproject(eq(merged), eq(CRS.decode("EPSG:6004326")), eq(CRS.decode("EPSG:6042101"))))
+        expect(manip.reproject(eq(merged), eq(CRS.decode("EPSG:6042101"))))
             .andReturn(projected);
         
         expect(manip.crop(eq(projected), eq(new TileBounds(0,0,1,1))))

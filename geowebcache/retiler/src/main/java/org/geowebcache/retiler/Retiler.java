@@ -137,17 +137,18 @@ public class Retiler {
                         parameters))
                     .map(t -> {
                         try {
-                            return layer.getTile(t);
-                        } catch (GeoWebCacheException | IOException e) {
+                            return manip.load(layer.getTile(t).getBlob(),
+                                    reference(
+                                        gridSubset.boundsFromIndex(t.getTileIndex()),
+                                        gridSubset.getSRS()));
+                        } catch (GeoWebCacheException | IOException | FactoryException e) {
                             throw new RuntimeException(e); // TODO do something more specific here
                         }
                     })
-                    .map(ConveyorTile::getBlob)
-                    .map(manip::load)
                     .toArray(Object[]::new))
                 .toArray(Object[][]::new);
             Object combinedTile = manip.merge(tileGrid);
-            Object projectedTile = manip.reproject(combinedTile, gridset2crs(gridSubset.getGridSet()), srs2crs(srs));
+            Object projectedTile = manip.reproject(combinedTile, srs2crs(srs));
         } catch (RuntimeException e) {
             if (e.getCause() instanceof GeoWebCacheException) {
                 throw (GeoWebCacheException) e.getCause();
