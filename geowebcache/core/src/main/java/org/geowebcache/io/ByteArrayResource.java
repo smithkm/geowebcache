@@ -1,6 +1,7 @@
 package org.geowebcache.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -9,6 +10,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.geowebcache.io.IOConsumer;
 import org.springframework.util.Assert;
 
 public class ByteArrayResource implements Resource, Serializable {
@@ -181,6 +183,37 @@ public class ByteArrayResource implements Resource, Serializable {
             byte[] newdata = new byte[(int) (data.length * 1.5)];
             System.arraycopy(data, 0, newdata, 0, data.length);
             data = newdata;
+        }
+    }
+
+    /**
+     * Provides an output stream to body.  Everything written to the stream will be included in the
+     * returned Resource.  The stream will be closed automatically.
+     * @param body
+     * @return A resource containing everything body wrote to the output stream.
+     * @throws IOException
+     */
+    public static Resource capture(IOConsumer<OutputStream> body) throws IOException {
+        try (
+            ByteArrayOutputStream os = new ByteArrayOutputStream()
+        ) {
+            body.accept(os);
+            return new ByteArrayResource(os.toByteArray());
+        }
+    }
+    /**
+     * Provides an output stream to body.  Everything written to the stream will be included in the
+     * returned Resource.  The stream will be closed automatically.
+     * @param body
+     * @return A resource containing everything body wrote to the output stream.
+     * @throws IOException
+     */
+    public static Resource capture(IOConsumer<OutputStream> body, int size) throws IOException {
+        try (
+            ByteArrayOutputStream os = new ByteArrayOutputStream(size)
+        ) {
+            body.accept(os);
+            return new ByteArrayResource(os.toByteArray());
         }
     }
 
