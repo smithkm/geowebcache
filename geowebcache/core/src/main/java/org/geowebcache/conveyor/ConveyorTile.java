@@ -172,7 +172,8 @@ public class ConveyorTile extends Conveyor implements TileResponseReceiver {
     public void setGridSetId(String gridSetId) {
         this.gridSetId = gridSetId;
     }
-
+    
+    
     /**
      * @deprecated as of 1.2.4a, use {@link #getBlob()}, keeping it for backwards compatibility as
      *             there are geoserver builds pegged at a given geoserver revision but building gwc
