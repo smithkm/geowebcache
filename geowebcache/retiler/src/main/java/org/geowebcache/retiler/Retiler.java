@@ -51,7 +51,7 @@ public class Retiler {
                 .collect(Collectors.toSet());
         
         try {
-            CoordinateReferenceSystem crs = CRS.decode(requestSrs.toString(), false);
+            CoordinateReferenceSystem crs = CRS.decode(requestSrs.toString(), true);
         } catch (NoSuchAuthorityCodeException e) {
             log.error(String.format("Unknown SRS: %s", requestSrs.toString()), e);
         } catch (FactoryException e) {
@@ -62,7 +62,7 @@ public class Retiler {
     
     public static CoordinateReferenceSystem srs2crs (SRS srs) 
     throws NoSuchAuthorityCodeException, FactoryException {
-        return CRS.decode(String.format("EPSG:%d",srs.getNumber()), false);
+        return CRS.decode(String.format("EPSG:%d",srs.getNumber()), true);
     }
     
     public static CoordinateReferenceSystem gridset2crs (GridSet gridSet) 
