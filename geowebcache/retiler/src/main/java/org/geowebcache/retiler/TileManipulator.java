@@ -41,7 +41,7 @@ public interface TileManipulator<TileType> {
      * @param dest
      * @return
      */
-    TileType reproject(TileType tile, CoordinateReferenceSystem dest);
+    TileType reproject(TileType tile, ReferencedEnvelope worldBounds, TileBounds pixelBounds);
     
     TileType crop(TileType tile, TileBounds bounds);
 }

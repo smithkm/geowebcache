@@ -76,6 +76,12 @@ public class Retiler {
         
         crs = srs2crs(srs);
         
+        return reference(bbox, crs);
+    }
+    
+    public static ReferencedEnvelope reference(BoundingBox bbox, CoordinateReferenceSystem crs) 
+    throws NoSuchAuthorityCodeException, FactoryException {
+        
         return new ReferencedEnvelope(
                 bbox.getMinX(), 
                 bbox.getMaxX(), 
@@ -94,9 +100,25 @@ public class Retiler {
         return unreference(env.transform(srs2crs(dest), false));
     }
     
+    public static BoundingBox reprojectBbox(BoundingBox bbox, CoordinateReferenceSystem source, CoordinateReferenceSystem dest) 
+    throws NoSuchAuthorityCodeException, FactoryException, TransformException {
+        ReferencedEnvelope env = reference(bbox, source);
+        return unreference(env.transform(dest, false));
+    }
+    
     public static long[] neededTiles(BoundingBox bbox, SRS srs, GridSubset gridSubset, int zoom)
     throws NoSuchAuthorityCodeException, FactoryException, TransformException {
         BoundingBox neededBbox = reprojectBbox(bbox, srs, gridSubset.getSRS());
+        return gridSubset.getCoverageIntersection(zoom, neededBbox);
+    }
+    public static long[] neededTiles(BoundingBox bbox, CoordinateReferenceSystem dest, GridSubset gridSubset, int zoom)
+    throws NoSuchAuthorityCodeException, FactoryException, TransformException {
+        BoundingBox neededBbox = reprojectBbox(bbox, dest, srs2crs(gridSubset.getSRS()));
+        return gridSubset.getCoverageIntersection(zoom, neededBbox);
+    }
+    public static long[] neededTiles(ReferencedEnvelope bbox, GridSubset gridSubset, int zoom)
+    throws NoSuchAuthorityCodeException, FactoryException, TransformException {
+        BoundingBox neededBbox = unreference(bbox.transform(srs2crs(gridSubset.getSRS()), false));
         return gridSubset.getCoverageIntersection(zoom, neededBbox);
     }
     
@@ -118,13 +140,14 @@ public class Retiler {
         return conv;
     }
     
-    public Resource getTile(BoundingBox bbox, SRS srs, TileLayer layer, GridSubset gridSubset, MimeType mime, Map<String, String> parameters, int zoom)
+    public Resource getTile(BoundingBox bbox, TileBounds size, SRS srs, TileLayer layer, GridSubset gridSubset, MimeType mime, Map<String, String> parameters, int zoom)
     throws NoSuchAuthorityCodeException, FactoryException, TransformException, GeoWebCacheException, IOException {
         if(Objects.isNull(layer.getGridSubset(gridSubset.getName()))) {
             throw new IllegalArgumentException(String.format("Layer %s does not have a GridSubset %s", layer.getName(), gridSubset.getName()));
         }
-        
-        final long[] needed = neededTiles(bbox, srs, gridSubset, zoom);
+        CoordinateReferenceSystem crs = srs2crs(srs);
+        ReferencedEnvelope env = reference(bbox, crs);
+        final long[] needed = neededTiles(bbox, crs, gridSubset, zoom);
         try{
             Object[][] tileGrid = LongStream.rangeClosed(needed[1], needed[3])
                 .parallel()
@@ -148,7 +171,8 @@ public class Retiler {
                     .toArray(Object[]::new))
                 .toArray(Object[][]::new);
             Object combinedTile = manip.merge(tileGrid);
-            Object projectedTile = manip.reproject(combinedTile, srs2crs(srs));
+            
+            Object projectedTile = manip.reproject(combinedTile, env, size);
         } catch (RuntimeException e) {
             if (e.getCause() instanceof GeoWebCacheException) {
                 throw (GeoWebCacheException) e.getCause();

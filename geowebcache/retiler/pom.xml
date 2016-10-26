@@ -88,6 +88,12 @@
       <artifactId>xmlunit</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.geowebcache</groupId>
+      <artifactId>gwc-core</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
 
 	<!-- Thijs Brentjens: for security fixes, OWASP library-->
 	<dependency>

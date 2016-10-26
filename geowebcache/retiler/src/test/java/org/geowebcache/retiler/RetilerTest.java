@@ -358,7 +358,13 @@ public class RetilerTest {
             {21054L, 22054L, 23054L, 24054L, 25054L}})))
             .andReturn(merged);
         
-        expect(manip.reproject(eq(merged), eq(CRS.decode("EPSG:6042101"))))
+        expect(manip.reproject(
+                eq(merged), 
+                eq(new ReferencedEnvelope(
+                        -1185205.40442546d, -691105.548875919d, 48360.7622934747d, 260986.86576161d,
+                        CRS.decode("EPSG:6042101"))),
+                eq(new TileBounds(0,0,256,256))
+                ))
             .andReturn(projected);
         
         expect(manip.crop(eq(projected), eq(new TileBounds(0,0,1,1))))
@@ -368,7 +374,7 @@ public class RetilerTest {
         
         Retiler retiler = new Retiler(manip);
         
-        Resource res = retiler.getTile(bbox, srs1, layer, subset, ImageMime.png, Collections.emptyMap(), 6);
+        Resource res = retiler.getTile(bbox, new TileBounds(0,0,256,256), srs1, layer, subset, ImageMime.png, Collections.emptyMap(), 6);
         
         assertThat(res, equalTo(null));
         

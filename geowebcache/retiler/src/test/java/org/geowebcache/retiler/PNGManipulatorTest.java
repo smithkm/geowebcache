@@ -10,9 +10,12 @@ import java.io.OutputStream;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.processing.Operations;
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.image.test.ImageAssert;
+import org.geotools.image.test.ImageDialog;
 import org.geotools.referencing.CRS;
 import org.geowebcache.io.FileResource;
 import org.geowebcache.io.Resource;
+import org.geowebcache.util.PropertyRule;
 import org.h2.util.IOUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,7 +56,17 @@ public class PNGManipulatorTest {
         
         GridCoverage2D tile = manip.load(imageResource, env);
         GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT.resample(tile, crsDest);
+        System.out.println(tile.getEnvelope2D());
+        System.out.println(tile.getGridGeometry());
+        System.out.println(tile.getGridGeometry().getGridRange());
         System.out.println(projected.getEnvelope2D());
+        System.out.println(projected.getGridGeometry());
+        System.out.println(projected.getGridGeometry().getGridRange());
+        
+        ImageDialog.show(tile.getRenderedImage());
+        ImageDialog.show(projected.getRenderedImage());
+        
+        ImageAssert.assertEquals(tile.getRenderedImage(), projected.getRenderedImage(), 1);
     }
     
 }

@@ -46,7 +46,7 @@ public class PNGManipulator implements TileManipulator<GridCoverage2D> {
     }
 
     @Override
-    public GridCoverage2D reproject(GridCoverage2D tile, CoordinateReferenceSystem dest) {
+    public GridCoverage2D reproject(GridCoverage2D tile, ReferencedEnvelope worldBounds, TileBounds pixelBounds) {
         return null;
     }
 
