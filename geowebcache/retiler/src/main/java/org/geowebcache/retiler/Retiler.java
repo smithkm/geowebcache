@@ -28,6 +28,7 @@ import org.geowebcache.layer.TileLayer;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.TileObject;
+import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -140,7 +141,7 @@ public class Retiler {
         return conv;
     }
     
-    public Resource getTile(BoundingBox bbox, TileBounds size, SRS srs, TileLayer layer, GridSubset gridSubset, MimeType mime, Map<String, String> parameters, int zoom)
+    public Resource getTile(BoundingBox bbox, GridEnvelope size, SRS srs, TileLayer layer, GridSubset gridSubset, MimeType mime, Map<String, String> parameters, int zoom)
     throws NoSuchAuthorityCodeException, FactoryException, TransformException, GeoWebCacheException, IOException {
         if(Objects.isNull(layer.getGridSubset(gridSubset.getName()))) {
             throw new IllegalArgumentException(String.format("Layer %s does not have a GridSubset %s", layer.getName(), gridSubset.getName()));

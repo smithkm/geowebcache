@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geowebcache.io.Resource;
+import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public interface TileManipulator<TileType> {
@@ -25,7 +26,7 @@ public interface TileManipulator<TileType> {
      * @param tile
      * @return
      */
-    TileBounds bounds(TileType tile);
+    GridEnvelope bounds(TileType tile);
     
     /**
      * 
@@ -41,7 +42,7 @@ public interface TileManipulator<TileType> {
      * @param dest
      * @return
      */
-    TileType reproject(TileType tile, ReferencedEnvelope worldBounds, TileBounds pixelBounds);
+    TileType reproject(TileType tile, ReferencedEnvelope worldBounds, GridEnvelope pixelBounds);
     
-    TileType crop(TileType tile, TileBounds bounds);
+    TileType crop(TileType tile, GridEnvelope bounds);
 }

@@ -7,12 +7,19 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.geotools.coverage.grid.GeneralGridEnvelope;
+import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.coverage.grid.GridCoverageFactory;
+import org.geotools.coverage.grid.io.GridCoverage2DReader;
 import org.geotools.coverage.processing.Operations;
+import org.geotools.gce.image.WorldImageReader;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.image.test.ImageAssert;
 import org.geotools.image.test.ImageDialog;
 import org.geotools.referencing.CRS;
+import org.geotools.referencing.operation.transform.AffineTransform2D;
+import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.FileResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.util.PropertyRule;
@@ -21,7 +28,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.opengis.coverage.grid.GridEnvelope;
+import org.opengis.geometry.Envelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.MathTransform;
 
 public class PNGManipulatorTest {
     
@@ -35,14 +45,11 @@ public class PNGManipulatorTest {
     
     @Before
     public void resources() throws Exception {
-        File imageFile = temp.newFile("512x256.png");
         try( 
             InputStream is = PNGManipulatorTest.class.getResourceAsStream("512x256.png");
-            OutputStream os = new FileOutputStream(imageFile);
         ) {
-            IOUtils.copy(is, os);
+            imageResource = ByteArrayResource.capture(os->IOUtils.copy(is, os));
         }
-        imageResource = new FileResource(imageFile);
     }
     
     @Test
@@ -52,21 +59,26 @@ public class PNGManipulatorTest {
         
         CoordinateReferenceSystem crsSource = CRS.decode("EPSG:4326",true);
         CoordinateReferenceSystem crsDest = CRS.decode("EPSG:6042101",true);
-        ReferencedEnvelope env = new ReferencedEnvelope(-120.938, -115.312, 61.875, 64.6875, crsSource);
+        ReferencedEnvelope envStart = new ReferencedEnvelope(-120.938, -115.312, 61.875, 64.6875, crsSource);
+        Envelope envProjected = new ReferencedEnvelope(-1287680.3280200420413166,-924201.5628860244760290,156231.5644834840204567 ,537562.9212252628058195, crsDest);
         
-        GridCoverage2D tile = manip.load(imageResource, env);
-        GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT.resample(tile, crsDest);
-        System.out.println(tile.getEnvelope2D());
-        System.out.println(tile.getGridGeometry());
-        System.out.println(tile.getGridGeometry().getGridRange());
-        System.out.println(projected.getEnvelope2D());
-        System.out.println(projected.getGridGeometry());
-        System.out.println(projected.getGridGeometry().getGridRange());
+        GridCoverage2DReader reader = new WorldImageReader(PNGManipulatorTest.class.getResource("2tiles-proj-crop.png"));
         
-        ImageDialog.show(tile.getRenderedImage());
+        GridCoverage2D expected = reader.read(null);
+        
+        GridEnvelope wantedPixels = expected.getGridGeometry().getGridRange();
+        envProjected = expected.getEnvelope();
+        System.out.println(CRS.equalsIgnoreMetadata(envProjected.getCoordinateReferenceSystem(), crsDest));
+        System.out.println(envProjected.getCoordinateReferenceSystem());
+        System.out.println(crsDest);
+        
+        GridCoverage2D tile = manip.load(imageResource, envStart);
+        GeneralGridGeometry geom = new GeneralGridGeometry(wantedPixels, envProjected);
+        GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT.resample(tile, crsDest, geom, null);
+        ImageDialog.show(expected.getRenderedImage());
         ImageDialog.show(projected.getRenderedImage());
-        
-        ImageAssert.assertEquals(tile.getRenderedImage(), projected.getRenderedImage(), 1);
+
+        ImageAssert.assertEquals(expected.getRenderedImage(), projected.getRenderedImage(), 1);
     }
     
 }

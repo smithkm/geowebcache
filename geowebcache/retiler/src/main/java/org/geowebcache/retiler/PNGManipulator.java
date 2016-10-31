@@ -11,6 +11,7 @@ import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
+import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 public class PNGManipulator implements TileManipulator<GridCoverage2D> {
@@ -34,7 +35,7 @@ public class PNGManipulator implements TileManipulator<GridCoverage2D> {
     }
 
     @Override
-    public TileBounds bounds(GridCoverage2D tile) {
+    public GridEnvelope bounds(GridCoverage2D tile) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -46,12 +47,12 @@ public class PNGManipulator implements TileManipulator<GridCoverage2D> {
     }
 
     @Override
-    public GridCoverage2D reproject(GridCoverage2D tile, ReferencedEnvelope worldBounds, TileBounds pixelBounds) {
+    public GridCoverage2D reproject(GridCoverage2D tile, ReferencedEnvelope worldBounds, GridEnvelope pixelBounds) {
         return null;
     }
 
     @Override
-    public GridCoverage2D crop(GridCoverage2D tile, TileBounds bounds) {
+    public GridCoverage2D crop(GridCoverage2D tile, GridEnvelope bounds) {
         // TODO Auto-generated method stub
         return null;
     }

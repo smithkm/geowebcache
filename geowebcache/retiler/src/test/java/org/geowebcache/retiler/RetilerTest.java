@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geowebcache.GeoWebCacheException;
@@ -39,6 +40,7 @@ import org.geowebcache.mime.ImageMime;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
@@ -351,8 +353,7 @@ public class RetilerTest {
         final Long projected = 101L;
         final Long cropped = 102L;
         final int tileSize = 256;
-        
-        expect(manip.bounds(merged)).andStubReturn(new TileBounds(0,0, tileSize*2, tileSize*5));
+        expect(manip.bounds(merged)).andStubReturn(new GeneralGridEnvelope(new int[]{0, 0}, new int[]{tileSize*2, tileSize*5}));
         expect(manip.merge(tileMatrix(new Long[][]{
             {21053L, 22053L, 23053L, 24053L, 25053L},
             {21054L, 22054L, 23054L, 24054L, 25054L}})))
@@ -363,18 +364,18 @@ public class RetilerTest {
                 eq(new ReferencedEnvelope(
                         -1185205.40442546d, -691105.548875919d, 48360.7622934747d, 260986.86576161d,
                         CRS.decode("EPSG:6042101"))),
-                eq(new TileBounds(0,0,256,256))
+                eq(new GeneralGridEnvelope(new int[]{0, 0}, new int[]{tileSize, tileSize}))
                 ))
             .andReturn(projected);
         
-        expect(manip.crop(eq(projected), eq(new TileBounds(0,0,1,1))))
+        expect(manip.crop(eq(projected), eq(new GeneralGridEnvelope(new int[]{0, 0}, new int[]{1, 1}))))
             .andReturn(cropped);
         
         control.replay();
         
         Retiler retiler = new Retiler(manip);
         
-        Resource res = retiler.getTile(bbox, new TileBounds(0,0,256,256), srs1, layer, subset, ImageMime.png, Collections.emptyMap(), 6);
+        Resource res = retiler.getTile(bbox, new GeneralGridEnvelope(new int[]{0, 0}, new int[]{tileSize, tileSize}), srs1, layer, subset, ImageMime.png, Collections.emptyMap(), 6);
         
         assertThat(res, equalTo(null));
         
