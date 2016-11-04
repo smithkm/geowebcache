@@ -1,11 +1,13 @@
 package org.geowebcache.retiler;
 
+import static org.geotools.image.test.ImageAssert.looksLike;
 import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.stream.Stream;
 
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
@@ -68,17 +70,20 @@ public class PNGManipulatorTest {
         
         GridEnvelope wantedPixels = expected.getGridGeometry().getGridRange();
         envProjected = expected.getEnvelope();
-        System.out.println(CRS.equalsIgnoreMetadata(envProjected.getCoordinateReferenceSystem(), crsDest));
+        /*System.out.println(CRS.equalsIgnoreMetadata(envProjected.getCoordinateReferenceSystem(), crsDest));
         System.out.println(envProjected.getCoordinateReferenceSystem());
-        System.out.println(crsDest);
+        System.out.println(crsDest);*/
         
         GridCoverage2D tile = manip.load(imageResource, envStart);
         GeneralGridGeometry geom = new GeneralGridGeometry(wantedPixels, envProjected);
         GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT.resample(tile, crsDest, geom, null);
-        ImageDialog.show(expected.getRenderedImage());
-        ImageDialog.show(projected.getRenderedImage());
-
-        ImageAssert.assertEquals(expected.getRenderedImage(), projected.getRenderedImage(), 1);
+        
+        /*Stream.of(expected, projected)
+            .parallel()
+            .map(GridCoverage2D::getRenderedImage)
+            .forEach(ImageDialog::show);*/
+        
+        assertThat(projected.getRenderedImage(), looksLike(expected.getRenderedImage(), 6000));
     }
     
 }
