@@ -55,33 +55,25 @@ public class PNGManipulatorTest {
     }
     
     @Test
-    public void test() throws Exception {
+    public void testReproject() throws Exception {
         
         TileManipulator<GridCoverage2D> manip = new PNGManipulator();
         
         CoordinateReferenceSystem crsSource = CRS.decode("EPSG:4326",true);
         CoordinateReferenceSystem crsDest = CRS.decode("EPSG:6042101",true);
         ReferencedEnvelope envStart = new ReferencedEnvelope(-120.938, -115.312, 61.875, 64.6875, crsSource);
-        Envelope envProjected = new ReferencedEnvelope(-1287680.3280200420413166,-924201.5628860244760290,156231.5644834840204567 ,537562.9212252628058195, crsDest);
+        ReferencedEnvelope envProjected = new ReferencedEnvelope(-1287680.3280200420413166,-924201.5628860244760290,156231.5644834840204567 ,537562.9212252628058195, crsDest);
         
         GridCoverage2DReader reader = new WorldImageReader(PNGManipulatorTest.class.getResource("2tiles-proj-crop.png"));
         
         GridCoverage2D expected = reader.read(null);
         
         GridEnvelope wantedPixels = expected.getGridGeometry().getGridRange();
-        envProjected = expected.getEnvelope();
-        /*System.out.println(CRS.equalsIgnoreMetadata(envProjected.getCoordinateReferenceSystem(), crsDest));
-        System.out.println(envProjected.getCoordinateReferenceSystem());
-        System.out.println(crsDest);*/
+        envProjected = new ReferencedEnvelope(expected.getEnvelope());
         
         GridCoverage2D tile = manip.load(imageResource, envStart);
-        GeneralGridGeometry geom = new GeneralGridGeometry(wantedPixels, envProjected);
-        GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT.resample(tile, crsDest, geom, null);
         
-        /*Stream.of(expected, projected)
-            .parallel()
-            .map(GridCoverage2D::getRenderedImage)
-            .forEach(ImageDialog::show);*/
+        GridCoverage2D projected = manip.reproject(tile, envProjected, wantedPixels);
         
         assertThat(projected.getRenderedImage(), looksLike(expected.getRenderedImage(), 6000));
     }

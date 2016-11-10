@@ -6,8 +6,10 @@ import java.io.InputStream;
 
 import javax.imageio.ImageIO;
 
+import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
+import org.geotools.coverage.processing.Operations;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
@@ -48,7 +50,10 @@ public class PNGManipulator implements TileManipulator<GridCoverage2D> {
 
     @Override
     public GridCoverage2D reproject(GridCoverage2D tile, ReferencedEnvelope worldBounds, GridEnvelope pixelBounds) {
-        return null;
+        GeneralGridGeometry geom = new GeneralGridGeometry(pixelBounds, worldBounds);
+        GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT.resample(tile, worldBounds.getCoordinateReferenceSystem(), geom, null);
+        
+        return projected;
     }
 
     @Override
