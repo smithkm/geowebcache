@@ -1,12 +1,15 @@
 package org.geowebcache.retiler;
 
 import static org.geotools.image.test.ImageAssert.looksLike;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.geotools.coverage.grid.GeneralGridEnvelope;
@@ -35,6 +38,8 @@ import org.opengis.geometry.Envelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
 
+import org.hamcrest.Matchers;
+
 public class PNGManipulatorTest {
     
     @Rule 
@@ -43,15 +48,23 @@ public class PNGManipulatorTest {
     @Rule public TestAuthorityRule customCRS = new TestAuthorityRule(
             PNGManipulatorTest.class.getResource("epsg.properties"));
     
-    Resource imageResource;
+    Resource twoTiles;
+    Resource leftTile;
+    Resource rightTile;
+    
+    Resource gwcResourceFromJavaResource(String name) throws IOException {
+        try( 
+            InputStream is = PNGManipulatorTest.class.getResourceAsStream(name);
+        ) {
+            return ByteArrayResource.capture(os->IOUtils.copy(is, os));
+        }
+    }
     
     @Before
     public void resources() throws Exception {
-        try( 
-            InputStream is = PNGManipulatorTest.class.getResourceAsStream("512x256.png");
-        ) {
-            imageResource = ByteArrayResource.capture(os->IOUtils.copy(is, os));
-        }
+        twoTiles = gwcResourceFromJavaResource("512x256.png");
+        leftTile = gwcResourceFromJavaResource("256x256-1.png");
+        rightTile = gwcResourceFromJavaResource("256x256-2.png");
     }
     
     @Test
@@ -60,22 +73,42 @@ public class PNGManipulatorTest {
         TileManipulator<GridCoverage2D> manip = new PNGManipulator();
         
         CoordinateReferenceSystem crsSource = CRS.decode("EPSG:4326",true);
-        CoordinateReferenceSystem crsDest = CRS.decode("EPSG:6042101",true);
         ReferencedEnvelope envStart = new ReferencedEnvelope(-120.938, -115.312, 61.875, 64.6875, crsSource);
-        ReferencedEnvelope envProjected = new ReferencedEnvelope(-1287680.3280200420413166,-924201.5628860244760290,156231.5644834840204567 ,537562.9212252628058195, crsDest);
         
         GridCoverage2DReader reader = new WorldImageReader(PNGManipulatorTest.class.getResource("2tiles-proj-crop.png"));
         
         GridCoverage2D expected = reader.read(null);
         
         GridEnvelope wantedPixels = expected.getGridGeometry().getGridRange();
-        envProjected = new ReferencedEnvelope(expected.getEnvelope());
+        ReferencedEnvelope envProjected = new ReferencedEnvelope(expected.getEnvelope());
         
-        GridCoverage2D tile = manip.load(imageResource, envStart);
+        GridCoverage2D tile = manip.load(twoTiles, envStart);
         
         GridCoverage2D projected = manip.reproject(tile, envProjected, wantedPixels);
         
         assertThat(projected.getRenderedImage(), looksLike(expected.getRenderedImage(), 6000));
     }
     
+    @Test
+    public void testMerge() throws Exception {
+        
+        TileManipulator<GridCoverage2D> manip = new PNGManipulator();
+        
+        CoordinateReferenceSystem crsSource = CRS.decode("EPSG:4326",true);
+        ReferencedEnvelope envMerged = new ReferencedEnvelope(-120.938, -115.312, 61.875, 64.6875, crsSource);
+        ReferencedEnvelope envLeft = new ReferencedEnvelope(-120.938, -120.938+(-115.312+120.938)/2, 61.875, 64.6875, crsSource);
+        ReferencedEnvelope envRight = new ReferencedEnvelope(-120.938+(-115.312+120.938)/2, -115.312, 61.875, 64.6875, crsSource);
+        
+        GridCoverage2D tile1 = manip.load(leftTile, envLeft);
+        GridCoverage2D tile2 = manip.load(rightTile, envRight);
+        GridCoverage2D tileExpected = manip.load(twoTiles, envMerged);
+        
+        GridCoverage2D merged = manip.merge(new GridCoverage2D[][]{{tile1, tile2}});
+        
+        Stream.of(merged.getRenderedImage(), tileExpected.getRenderedImage()).parallel().forEach(ImageDialog::show);;
+        assertThat(merged.getGridGeometry(), equalTo(tileExpected.getGridGeometry()));
+        assertThat(merged.getRenderedImage(), looksLike(tileExpected.getRenderedImage(), 6000));
+    }
+
+
 }
