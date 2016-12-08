@@ -35,7 +35,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
  */
 @ParametersAreNonnullByDefault
 @XStreamAlias("integerParameterFilter")
-public class IntegerParameterFilter extends ParameterFilter {
+public class IntegerParameterFilter extends AbstractParameterFilter {
     
     
     private static Integer DEFAULT_THRESHOLD = Integer.valueOf(1);
@@ -45,10 +45,20 @@ public class IntegerParameterFilter extends ParameterFilter {
 
     private Integer threshold;
 
-
+    @Deprecated
     public IntegerParameterFilter() {
         super();
-        values = new ArrayList<Integer>(0);
+        values = Collections.emptyList();
+    }
+
+    public IntegerParameterFilter(String key, String defaultValue) {
+        super(key, defaultValue);
+        values = Collections.emptyList();
+    }
+
+    public IntegerParameterFilter(String key) {
+        super(key);
+        values = Collections.emptyList();
     }
 
     protected IntegerParameterFilter readResolve() {
@@ -159,9 +169,8 @@ public class IntegerParameterFilter extends ParameterFilter {
 
     @Override
     public IntegerParameterFilter clone() {
-        IntegerParameterFilter clone = new IntegerParameterFilter();
-        clone.setDefaultValue(getDefaultValue());
-        clone.setKey(getKey());
+        IntegerParameterFilter clone = new IntegerParameterFilter(getKey(), getDefaultValue());
+        
         if (values != null) {
             clone.values = new ArrayList<Integer>(values);
         }

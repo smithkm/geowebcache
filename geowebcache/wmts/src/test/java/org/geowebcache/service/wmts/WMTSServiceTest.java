@@ -42,6 +42,7 @@ import org.geowebcache.config.meta.ServiceProvider;
 import org.geowebcache.conveyor.Conveyor;
 import org.geowebcache.conveyor.ConveyorTile;
 import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
 import org.geowebcache.grid.BoundingBox;
 import org.geowebcache.grid.GridSet;
@@ -163,8 +164,7 @@ public class WMTSServiceTest extends TestCase {
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
 
             // add styles
-            StringParameterFilter styles = new StringParameterFilter();
-            styles.setKey("STYLES");
+            StringParameterFilter styles = new StringParameterFilter("STYLES");
             styles.setValues(Arrays.asList("style-a", "style-b"));
             when(tileLayer.getParameterFilters()).thenReturn(Collections.singletonList(styles));
 
@@ -436,7 +436,7 @@ public class WMTSServiceTest extends TestCase {
         {
             List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale","EPSG:4326");
             
-            ParameterFilter styleFilter = mock(ParameterFilter.class);
+            AbstractParameterFilter styleFilter = mock(AbstractParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(null);
@@ -502,7 +502,7 @@ public class WMTSServiceTest extends TestCase {
         {
             List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale","EPSG:4326");
             
-            ParameterFilter styleFilter = mock(ParameterFilter.class);
+            AbstractParameterFilter styleFilter = mock(AbstractParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(Collections.<String>emptyList());
@@ -569,7 +569,7 @@ public class WMTSServiceTest extends TestCase {
         {
             List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale","EPSG:4326");
             
-            ParameterFilter styleFilter = mock(ParameterFilter.class);
+            AbstractParameterFilter styleFilter = mock(AbstractParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(Arrays.asList("Foo", "Bar", "Baz"));
@@ -649,7 +649,7 @@ public class WMTSServiceTest extends TestCase {
         {
             List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale","EPSG:4326");
             
-            ParameterFilter styleFilter = mock(ParameterFilter.class);
+            AbstractParameterFilter styleFilter = mock(AbstractParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(Arrays.asList("Foo", "Bar", "Baz"));

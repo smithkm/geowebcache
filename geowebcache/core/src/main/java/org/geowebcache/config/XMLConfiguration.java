@@ -59,7 +59,7 @@ import org.geowebcache.config.meta.ServiceInformation;
 import org.geowebcache.filter.parameters.CaseNormalizer;
 import org.geowebcache.filter.parameters.FloatParameterFilter;
 import org.geowebcache.filter.parameters.IntegerParameterFilter;
-import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.filter.parameters.RegexParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
 import org.geowebcache.filter.request.CircularExtentFilter;
@@ -420,7 +420,7 @@ public class XMLConfiguration implements Configuration, InitializingBean {
         {
             // Allow any implementation of these extension points
             xs.allowTypeHierarchy(org.geowebcache.layer.TileLayer.class);
-            xs.allowTypeHierarchy(org.geowebcache.filter.parameters.ParameterFilter.class);
+            xs.allowTypeHierarchy(org.geowebcache.filter.parameters.AbstractParameterFilter.class);
             xs.allowTypeHierarchy(org.geowebcache.filter.request.RequestFilter.class);
             xs.allowTypeHierarchy(org.geowebcache.config.BlobStoreConfig.class);
             xs.allowTypeHierarchy(org.geowebcache.config.Configuration.class);
@@ -458,8 +458,8 @@ public class XMLConfiguration implements Configuration, InitializingBean {
         xs.alias("mimeFormats", new ArrayList<String>().getClass());
         xs.alias("formatModifiers", new ArrayList<FormatModifier>().getClass());
         xs.alias("srs", org.geowebcache.grid.SRS.class);
-        xs.alias("parameterFilters", new ArrayList<ParameterFilter>().getClass());
-        xs.alias("parameterFilter", ParameterFilter.class);
+        xs.alias("parameterFilters", new ArrayList<AbstractParameterFilter>().getClass());
+        xs.alias("parameterFilter", AbstractParameterFilter.class);
         xs.alias("seedRequest", SeedRequest.class);
         
         xs.processAnnotations(CaseNormalizer.class);

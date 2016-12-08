@@ -34,6 +34,7 @@ import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.conveyor.ConveyorTile;
 import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.filter.request.RequestFilter;
 import org.geowebcache.filter.request.RequestFilterException;
 import org.geowebcache.grid.BoundingBox;
@@ -553,7 +554,7 @@ public abstract class TileLayer {
      * @return Set of parameter filter keys and values, with keys normalized to upper case, or empty
      *         map if they match the layer's parameter filters default values
      * @throws GeoWebCacheException
-     *             if {@link ParameterFilter#apply(String)} does
+     *             if {@link AbstractParameterFilter#apply(String)} does
      */
     public Map<String, String> getModifiableParameters(Map<String, ?> map, String encoding)
             throws GeoWebCacheException {

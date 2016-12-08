@@ -40,7 +40,7 @@ public class XMLConfiguration {
             
             // Allow any implementation of these extension points
             xs.allowTypeHierarchy(org.geowebcache.layer.TileLayer.class);
-            xs.allowTypeHierarchy(org.geowebcache.filter.parameters.ParameterFilter.class);
+            xs.allowTypeHierarchy(org.geowebcache.filter.parameters.AbstractParameterFilter.class);
             xs.allowTypeHierarchy(org.geowebcache.filter.request.RequestFilter.class);
             xs.allowTypeHierarchy(org.geowebcache.config.BlobStoreConfig.class);
             xs.allowTypeHierarchy(org.geowebcache.config.Configuration.class);

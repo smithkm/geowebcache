@@ -15,7 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
 import org.geowebcache.layer.TileLayer;
 import org.hamcrest.Matchers;
@@ -25,22 +25,19 @@ public abstract class TileLayerTest {
     
     @Test
     public void testGetModifiableParameters() throws Exception {
-        List<ParameterFilter> filters = new LinkedList<>();
+        List<AbstractParameterFilter> filters = new LinkedList<>();
         {
-            StringParameterFilter filter = new StringParameterFilter();
-            filter.setKey("FILTER1");
+            StringParameterFilter filter = new StringParameterFilter("FILTER1");
             filter.setValues(Arrays.asList("foo", "bar"));
             filters.add(filter);
         }
         {
-            StringParameterFilter filter = new StringParameterFilter();
-            filter.setKey("FILTER2");
+            StringParameterFilter filter = new StringParameterFilter("FILTER2");
             filter.setValues(Arrays.asList("quux", "quam"));
             filters.add(filter);
         }
         {
-            StringParameterFilter filter = new StringParameterFilter();
-            filter.setKey("FILTER3");
+            StringParameterFilter filter = new StringParameterFilter("FILTER3");
             filter.setValues(Arrays.asList("quux", "quam"));
             filters.add(filter);
         }
@@ -64,5 +61,5 @@ public abstract class TileLayerTest {
         
     }
 
-    protected abstract TileLayer getLayerWithFilters(Collection<ParameterFilter> filters) throws Exception;
+    protected abstract TileLayer getLayerWithFilters(Collection<AbstractParameterFilter> filters) throws Exception;
 }

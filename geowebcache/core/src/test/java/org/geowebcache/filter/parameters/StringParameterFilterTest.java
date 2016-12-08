@@ -45,10 +45,8 @@ public class StringParameterFilterTest {
     
     @Before
     public void setUp() {
-        filter = new StringParameterFilter();
-        filter.setKey("TEST");
+        filter = new StringParameterFilter("TEST", "Default");
         filter.setValues(Arrays.asList("foo", "Bar", "BAZ"));
-        filter.setDefaultValue("Default");
         
         xs = new GeoWebCacheXStream();
         xs = XMLConfiguration.getConfiguredXStream(xs, new StaticWebApplicationContext());

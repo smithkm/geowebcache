@@ -43,10 +43,8 @@ public class IntegerParameterFilterTest {
     
     @Before
     public void setUp() {
-        filter = new IntegerParameterFilter();
-        filter.setKey("TEST");
+        filter = new IntegerParameterFilter("TEST", "Default");
         filter.setValues(Arrays.asList(42, 2, 0, -1, -200));
-        filter.setDefaultValue("Default");
         filter.setThreshold(1);
         
         xs = new GeoWebCacheXStream();

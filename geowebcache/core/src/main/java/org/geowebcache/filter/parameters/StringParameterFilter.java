@@ -32,12 +32,20 @@ public class StringParameterFilter extends CaseNormalizingParameterFilter {
 
     private static final long serialVersionUID = 7383381085250203901L;
 
-    private List<String> values;
+    private List<String> values = Collections.emptyList();
     
     public StringParameterFilter() {
-        values = new ArrayList<String>(0);
+        super();
     }
-
+    
+    public StringParameterFilter(String key, String defaultValue) {
+        super(key, defaultValue);
+    }
+    
+    public StringParameterFilter(String key) {
+        super(key);
+    }
+    
     protected StringParameterFilter readResolve() {
         super.readResolve();
         if (values == null) {
@@ -98,9 +106,7 @@ public class StringParameterFilter extends CaseNormalizingParameterFilter {
 
     @Override
     public StringParameterFilter clone() {
-        StringParameterFilter clone = new StringParameterFilter();
-        clone.setDefaultValue(getDefaultValue());
-        clone.setKey(getKey());
+        StringParameterFilter clone = new StringParameterFilter(getKey(), getDefaultValue());
         if (values != null) {
             clone.values = new ArrayList<String>(values);
         }

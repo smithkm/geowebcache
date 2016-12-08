@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
-public abstract class CaseNormalizingParameterFilter extends ParameterFilter {
+public abstract class CaseNormalizingParameterFilter extends AbstractParameterFilter {
     
     private CaseNormalizer normalize;
     

@@ -19,6 +19,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
 import org.geowebcache.grid.BoundingBox;
 import org.geowebcache.grid.GridSet;
@@ -158,10 +159,8 @@ public class XMLConfigurationTest {
         GridSubset gridSubSet = GridSubsetFactory.createGridSubSet(gridSetBroker.get("EPSG:4326"));
         subSets.put(gridSubSet.getName(), gridSubSet);
 
-        StringParameterFilter filter = new StringParameterFilter();
-        filter.setKey("STYLES");
+        StringParameterFilter filter = new StringParameterFilter("STYLES", "polygon");
         filter.setValues(Arrays.asList("polygon", "point"));
-        filter.setDefaultValue("polygon");
 
         List<ParameterFilter> parameterFilters = new ArrayList<ParameterFilter>(
                 new ArrayList<ParameterFilter>(Arrays.asList((ParameterFilter) filter)));

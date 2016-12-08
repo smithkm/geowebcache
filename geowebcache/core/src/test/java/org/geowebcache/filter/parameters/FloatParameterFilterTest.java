@@ -43,10 +43,8 @@ public class FloatParameterFilterTest {
     
     @Before
     public void setUp() {
-        filter = new FloatParameterFilter();
-        filter.setKey("TEST");
+        filter = new FloatParameterFilter("TEST", "Default");
         filter.setValues(Arrays.asList(42f, 6.283f, -17.5f));
-        filter.setDefaultValue("Default");
         filter.setThreshold(0.00001f);
         
         xs = new GeoWebCacheXStream();

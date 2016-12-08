@@ -62,7 +62,7 @@ import org.easymock.classextension.EasyMock;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.TestHelpers;
 import org.geowebcache.conveyor.ConveyorTile;
-import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.grid.GridSet;
 import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.grid.GridSubset;
@@ -549,7 +549,7 @@ public class WMSLayerTest extends TileLayerTest {
     }
 
     @Override
-    protected TileLayer getLayerWithFilters(Collection<ParameterFilter> filters) throws Exception {
+    protected TileLayer getLayerWithFilters(Collection<AbstractParameterFilter> filters) throws Exception {
         WMSLayer tl = createWMSLayer("image/png", 5, 6);
         @SuppressWarnings("unused")
         MockTileSupport mock = new MockTileSupport(tl);

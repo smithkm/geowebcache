@@ -33,7 +33,7 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
  */
 @ParametersAreNonnullByDefault
 @XStreamAlias("floatParameterFilter")
-public class FloatParameterFilter extends ParameterFilter {
+public class FloatParameterFilter extends AbstractParameterFilter {
 
     private static final long serialVersionUID = 4186888723396139208L;
     
@@ -44,16 +44,26 @@ public class FloatParameterFilter extends ParameterFilter {
 
     private Float threshold;
 
-
+    @Deprecated
     public FloatParameterFilter() {
         super();
-        values = new ArrayList<Float>(0);
+        values = Collections.emptyList();
     }
-
+    
+    public FloatParameterFilter(String key, String defaultValue) {
+        super(key, defaultValue);
+        values = Collections.emptyList();
+    }
+    
+    public FloatParameterFilter(String key) {
+        super(key);
+        values = Collections.emptyList();
+    }
+    
     protected FloatParameterFilter readResolve() {
         super.readResolve();
         if (values == null) {
-            values = new ArrayList<Float>(0);
+            values = Collections.emptyList();
         }
         if (threshold == null) {
             threshold = getDefaultThreshold();
@@ -158,9 +168,7 @@ public class FloatParameterFilter extends ParameterFilter {
 
     @Override
     public FloatParameterFilter clone() {
-        FloatParameterFilter clone = new FloatParameterFilter();
-        clone.setDefaultValue(getDefaultValue());
-        clone.setKey(getKey());
+        FloatParameterFilter clone = new FloatParameterFilter(getKey(), getDefaultValue());
         if (values != null) {
             clone.values = new ArrayList<Float>(values);
         }

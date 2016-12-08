@@ -44,6 +44,14 @@ public class RegexParameterFilter extends CaseNormalizingParameterFilter {
         super();
     }
     
+    public RegexParameterFilter(String key, String defaultValue) {
+        super(key, defaultValue);
+    }
+
+    public RegexParameterFilter(String key) {
+        super(key);
+    }
+
     /**
      * Get a {@link Matcher} for this filter's regexp against the given string.
      * @param value
@@ -125,9 +133,7 @@ public class RegexParameterFilter extends CaseNormalizingParameterFilter {
 
     @Override
     public RegexParameterFilter clone() {
-        RegexParameterFilter clone = new RegexParameterFilter();
-        clone.setDefaultValue(getDefaultValue());
-        clone.setKey(getKey());
+        RegexParameterFilter clone = new RegexParameterFilter(getKey(),getDefaultValue());
         clone.regex = regex;
         clone.setNormalize(getNormalize().clone());
         return clone;

@@ -46,10 +46,8 @@ public class RegexParameterFilterTest {
     
     @Before
     public void setUp() {
-        filter = new RegexParameterFilter();
-        filter.setKey("TEST");
+        filter = new RegexParameterFilter("TEST", "Default");
         filter.setRegex("foo|Bar|BAZ");
-        filter.setDefaultValue("Default");
         
         xs = new GeoWebCacheXStream();
         xs = XMLConfiguration.getConfiguredXStream(xs, new StaticWebApplicationContext());

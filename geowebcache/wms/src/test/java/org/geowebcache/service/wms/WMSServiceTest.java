@@ -4,7 +4,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -276,8 +275,7 @@ public class WMSServiceTest extends TestCase {
         List<String> mimeFormats = new ArrayList<String>();
         mimeFormats.add("image/png");
         List<ParameterFilter> parameterFilters = new ArrayList<ParameterFilter>();
-        RegexParameterFilter filter = new RegexParameterFilter();
-        filter.setKey("time");
+        RegexParameterFilter filter = new RegexParameterFilter("time");
         filter.setRegex("\\d{2}:\\d{2}");
         parameterFilters.add(filter);
         TileLayer tileLayer = new WMSLayer(layerName, null, null, layerName, mimeFormats, null,

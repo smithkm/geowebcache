@@ -33,7 +33,7 @@ import com.google.common.base.Preconditions;
  * It is naive in the sense that it does not really parse or understand the values it is dealing
  * with, anything is accepted.
  */
-public class NaiveWMSDimensionFilter extends ParameterFilter implements WMSDimensionProvider {
+public class NaiveWMSDimensionFilter extends AbstractParameterFilter implements WMSDimensionProvider {
 
     private static final long serialVersionUID = 8217550988333856916L;
 
@@ -41,21 +41,22 @@ public class NaiveWMSDimensionFilter extends ParameterFilter implements WMSDimen
 
     private Extent extent;
 
-    public NaiveWMSDimensionFilter(Dimension dimension, Extent extent) {
-        Preconditions.checkNotNull(dimension);
-        Preconditions.checkNotNull(extent);
-        this.dimension = dimension;
-        this.extent = extent;
-
+    static protected String makeKeyName(Dimension dimension){
         String keyName = dimension.getName();
-
+        
         if (keyName.compareToIgnoreCase("time") != 0
                 && keyName.compareToIgnoreCase("elevation") != 0) {
             keyName = "dim_" + keyName;
         }
-
-        this.setKey(keyName);
-        this.setDefaultValue(extent.getDefaultValue());
+        return keyName;
+    }
+    
+    public NaiveWMSDimensionFilter(Dimension dimension, Extent extent) {
+        super(makeKeyName(dimension), extent.getDefaultValue());
+        Preconditions.checkNotNull(dimension);
+        Preconditions.checkNotNull(extent);
+        this.dimension = dimension;
+        this.extent = extent;
     }
 
     public String apply(String str) throws ParameterException {

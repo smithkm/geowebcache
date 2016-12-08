@@ -2,7 +2,6 @@ package org.geowebcache.service.gmaps;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -99,9 +98,7 @@ public class GMapsConverterTest extends TestCase {
         StorageBroker sb = null;
 
         List<ParameterFilter> filters = new ArrayList<ParameterFilter>();
-        RegexParameterFilter parameterFilter = new RegexParameterFilter();
-        parameterFilter.setKey(CQL_FILTER_PARAMETER_NAME);
-        parameterFilter.setDefaultValue("");
+        RegexParameterFilter parameterFilter = new RegexParameterFilter(CQL_FILTER_PARAMETER_NAME);
         parameterFilter.setRegex("value='.*'");
         filters.add(parameterFilter);
 

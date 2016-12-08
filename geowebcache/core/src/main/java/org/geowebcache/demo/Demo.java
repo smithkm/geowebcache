@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.filter.parameters.FloatParameterFilter;
 import org.geowebcache.filter.parameters.ParameterFilter;
+import org.geowebcache.filter.parameters.AbstractParameterFilter;
 import org.geowebcache.filter.parameters.RegexParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
 import org.geowebcache.grid.BoundingBox;
@@ -32,6 +33,8 @@ import org.geowebcache.mime.MimeType;
 import org.geowebcache.mime.XMLMime;
 import org.geowebcache.util.ServletUtils;
 import org.springframework.util.Assert;
+
+import com.google.common.base.Objects;
 
 public class Demo {
 
@@ -363,51 +366,51 @@ public class Demo {
             return "";
         }
         parameterFilters = new ArrayList<ParameterFilter>(parameterFilters);
-        Collections.sort(parameterFilters, new Comparator<ParameterFilter>() {
-            public int compare(ParameterFilter o1, ParameterFilter o2) {
-                return o1.getKey().compareTo(o2.getKey());
-            }
-        });
+        Collections.sort(parameterFilters, (o1,o2)-> o1.getKey().compareTo(o2.getKey()));
+        
         StringBuilder doc = new StringBuilder();
         doc.append("Modifiable Parameters:\n");
         doc.append("<table>\n");
-        for (ParameterFilter pf : parameterFilters) {
-            Assert.notNull(pf);
-            String key = pf.getKey();
-            String defaultValue = pf.getDefaultValue();
-            List<String> legalValues = pf.getLegalValues();
-            doc.append("<tr><td>").append(key.toUpperCase()).append(": ").append("</td><td>");
-            String parameterId = key;
-            if (pf instanceof StringParameterFilter) {
-                Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
-                makePullDown(doc, parameterId, keysValues, defaultValue);
-            } else if (pf instanceof RegexParameterFilter) {
-                makeTextInput(doc, parameterId, 25);
-            } else if (pf instanceof FloatParameterFilter) {
-                FloatParameterFilter floatParam = (FloatParameterFilter) pf;
-                if (floatParam.getValues().isEmpty()) {
-                    // accepts any value
-                    makeTextInput(doc, parameterId, 25);
-                } else {
+        parameterFilters.stream()
+            .sorted((o1,o2)-> o1.getKey().compareTo(o2.getKey()))
+            .forEachOrdered(pf-> {
+                
+                Assert.notNull(pf);
+                String key = pf.getKey();
+                String defaultValue = pf.getDefaultValue();
+                List<String> legalValues = pf.getLegalValues();
+                doc.append("<tr><td>").append(key.toUpperCase()).append(": ").append("</td><td>");
+                String parameterId = key;
+                if (pf instanceof StringParameterFilter) {
                     Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
                     makePullDown(doc, parameterId, keysValues, defaultValue);
-                }
-            } else if ("org.geowebcache.filter.parameters.NaiveWMSDimensionFilter".equals(pf
-                    .getClass().getName())) {
-                makeTextInput(doc, parameterId, 25);
-            } else {
-                // Unknown filter type
-                if (legalValues == null) {
-                    // Doesn't have a defined set of values, just provide a text field
+                } else if (pf instanceof RegexParameterFilter) {
+                    makeTextInput(doc, parameterId, 25);
+                } else if (pf instanceof FloatParameterFilter) {
+                    FloatParameterFilter floatParam = (FloatParameterFilter) pf;
+                    if (floatParam.getValues().isEmpty()) {
+                        // accepts any value
+                        makeTextInput(doc, parameterId, 25);
+                    } else {
+                        Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
+                        makePullDown(doc, parameterId, keysValues, defaultValue);
+                    }
+                } else if ("org.geowebcache.filter.parameters.NaiveWMSDimensionFilter".equals(pf
+                        .getClass().getName())) {
                     makeTextInput(doc, parameterId, 25);
                 } else {
-                    // Does have a defined set of values, so provide a drop down
-                    Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
-                    makePullDown(doc, parameterId, keysValues, defaultValue);
+                    // Unknown filter type
+                    if (legalValues == null) {
+                        // Doesn't have a defined set of values, just provide a text field
+                        makeTextInput(doc, parameterId, 25);
+                    } else {
+                        // Does have a defined set of values, so provide a drop down
+                        Map<String, String> keysValues = makeParametersMap(defaultValue, legalValues);
+                        makePullDown(doc, parameterId, keysValues, defaultValue);
+                    }
                 }
-            }
-            doc.append("</td></tr>\n");
-        }
+                doc.append("</td></tr>\n");
+            });
         doc.append("</table>\n");
         return doc.toString();
     }
