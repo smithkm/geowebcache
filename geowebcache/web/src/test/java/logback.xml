@@ -1,0 +1,6 @@
+<configuration debug="false">
+<!-- Mockserver dumps out the content of all requests at INFO level.
+Raising the logging level to WARN prevents raw PNGs from being dumped to stdout while doing 
+integration tests-->
+    <logger name="org.mockserver" level="WARN"/>
+</configuration>

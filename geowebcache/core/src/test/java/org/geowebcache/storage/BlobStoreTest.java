@@ -17,8 +17,11 @@
  */
 package org.geowebcache.storage;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.File;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +36,8 @@ import org.geowebcache.io.Resource;
 import org.geowebcache.mime.ImageMime;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.blobstore.file.FileBlobStore;
+
+import org.hamcrest.Matchers;
 
 public class BlobStoreTest extends TestCase {
     public static final String TEST_BLOB_DIR_NAME = "gwcTestBlobs";
@@ -250,5 +255,37 @@ public class BlobStoreTest extends TestCase {
         fbs.putLayerMetadata(layerName, key2, null);
         assertEquals("value 1_1", fbs.getLayerMetadata(layerName, key1));
         assertNull(fbs.getLayerMetadata(layerName, key2));
+    }
+    
+    /*
+     * If a new 
+     */
+    public void testNewEmptyParameter() throws Exception {
+        FileBlobStore fbs = setup();
+        
+        Resource bytes = new ByteArrayResource("1 2 3 4 5 6 test".getBytes());
+        long[] xyz = { 1L, 2L, 3L };
+        
+        TileObject toGetNoParam = TileObject.createQueryTileObject("test:123123 112", xyz, "EPSG:4326",
+                "image/jpeg", Collections.emptyMap());
+        
+        TileObject toGetEmptyParam = TileObject.createQueryTileObject("test:123123 112", xyz, "EPSG:4326",
+                "image/jpeg", Collections.singletonMap("TEST", ""));
+        
+        TileObject toGetNullParam = TileObject.createQueryTileObject("test:123123 112", xyz, "EPSG:4326",
+                "image/jpeg", Collections.singletonMap("TEST", null));
+        
+        assertFalse(fbs.get(toGetNoParam));
+        assertFalse(fbs.get(toGetEmptyParam));
+        assertFalse(fbs.get(toGetNullParam));
+        
+        TileObject toPut = TileObject.createCompleteTileObject("test:123123 112", xyz, "EPSG:4326",
+                "image/jpeg", Collections.emptyMap(), bytes);
+        
+        fbs.put(toPut);
+        
+        assertTrue(fbs.get(toGetNoParam));
+        assertTrue(fbs.get(toGetEmptyParam));
+        assertTrue(fbs.get(toGetNullParam));
     }
 }

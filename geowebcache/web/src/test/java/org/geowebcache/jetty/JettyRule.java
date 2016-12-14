@@ -163,4 +163,12 @@ public class JettyRule extends org.junit.rules.ExternalResource {
             }
         }).start();
     }
+    
+    public File getConfDir() {
+        return confDir;
+    }
+    
+    public File getCacheDir() {
+        return cacheDir;
+    }
 }
