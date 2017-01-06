@@ -76,7 +76,6 @@ public class StorageIT {
         nsContext.bindNamespaceUri("atom", "http://www.w3.org/2005/Atom");
         nsContext.bindNamespaceUri("wmts", "http://www.opengis.net/wmts/1.0");
         nsContext.bindNamespaceUri("ows", "http://www.opengis.net/ows/1.1");
-        assertThat(LoggerFactory.getLogger(MockServer.class).isInfoEnabled(), is(false));
     }
     
     Matcher<Node> hasXPath(final String xpathExpr, final Matcher<String> matcher) {
@@ -247,10 +246,7 @@ public class StorageIT {
                 assertThat(response, status(200));
             }
         }
-        
-        // The preceding request should not have caused interaction with the back end.
-        mockServerClient.verifyZeroInteractions();
-        
+       
         // The tile requested
         assertThat(tileFile1, not(exists()));
         // Another tile in the same metatile
