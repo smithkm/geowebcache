@@ -17,6 +17,9 @@
  */
 package org.geowebcache.storage;
 
+import java.util.Map;
+
+import org.geowebcache.storage.blobstore.file.FilePathGenerator;
 
 /**
  * Manages the persistence of the actual data contained in cacheable objects (tiles, WFS responses).
@@ -44,6 +47,30 @@ public interface BlobStore {
      * @throws StorageException
      */
     public boolean deleteByGridsetId(final String layerName, final String gridSetId)
+            throws StorageException;
+
+    /**
+     * Delete the cache for the named layer and parameters.
+     * 
+     * @param layerName
+     * @param parameters Complete filtered parameters to generate the ID
+     * @return {@literal true} if successful, {@literal false} otherwise
+     * @throws StorageException
+     */
+    public default boolean deleteByParameters(final String layerName, final Map<String, String> parameters)
+            throws StorageException {
+        return deleteByParameters(layerName, FilePathGenerator.getParametersId(parameters));
+    }
+    
+    /**
+     * Delete the cache for the named layer and parameters id.
+     * 
+     * @param layerName
+     * @param parameters
+     * @return {@literal true} if successful, {@literal false} otherwise
+     * @throws StorageException
+     */
+    public boolean deleteByParameters(final String layerName, String parametersId)
             throws StorageException;
 
     /**
