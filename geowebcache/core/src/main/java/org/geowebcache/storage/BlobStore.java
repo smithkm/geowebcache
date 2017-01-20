@@ -17,6 +17,7 @@
  */
 package org.geowebcache.storage;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.geowebcache.storage.blobstore.file.FilePathGenerator;
@@ -136,7 +137,15 @@ public interface BlobStore {
      * @see BlobStoreListener
      */
     public boolean removeListener(BlobStoreListener listener);
-
+    
+    /**
+     * Get the cached parameter maps for a layer
+     * @param layerName
+     * @return
+     */
+    public Collection<Map<String, String>> getParameters(String layerName);
+    
+    
     /**
      * Rename a stored layer
      * @param oldLayerName the old name of the layer

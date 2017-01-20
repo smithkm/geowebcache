@@ -32,6 +32,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -721,6 +724,19 @@ public class FileBlobStore implements BlobStore {
         long actuallyUsedStorage = blockSize * (int) Math.ceil((double) fileSize / blockSize);
 
         return actuallyUsedStorage;
+    }
+
+    @Override
+    public boolean deleteByParameters(String layerName, String parametersId)
+            throws StorageException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public Collection<Map<String, String>> getParameters(String layerName) {
+        // TODO Auto-generated method stub
+        return Collections.emptyList();
     }
 
 }
