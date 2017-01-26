@@ -18,9 +18,9 @@ package org.geowebcache.sqlite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
-import org.geowebcache.storage.blobstore.file.FilePathGenerator;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -256,7 +256,7 @@ final class FileManager {
             return parametersId;
         }
         // computing a new parameters id based on the provided parameters
-        String computedParametersId = FilePathGenerator.getParametersId(parameters);
+        String computedParametersId = ParametersUtils.getId(parameters);
         if (computedParametersId == null) {
             // the provided parameter are null or empty let's use the string 'null' as parameter id
             return "null";

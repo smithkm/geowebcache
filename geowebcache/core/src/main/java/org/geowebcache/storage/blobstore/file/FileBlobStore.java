@@ -35,15 +35,19 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.config.ConfigurationException;
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.io.FileResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.mime.MimeException;
@@ -446,6 +450,7 @@ public class FileBlobStore implements BlobStore {
         final long oldSize = fh.length();
         final boolean existed = oldSize > 0;
         writeFile(fh, stObj, existed);
+        
         // mark the last modification as the tile creation time if set, otherwise
         // we'll leave it to the writing time
         if (stObj.getCreated() > 0) {
@@ -538,6 +543,8 @@ public class FileBlobStore implements BlobStore {
                     temp = null;
                 }
             }
+            
+            persistParameterMap(stObj);
         } finally {
 
             if (temp != null) {
@@ -548,7 +555,18 @@ public class FileBlobStore implements BlobStore {
         }
 
     }
-
+    
+    protected void persistParameterMap(TileObject stObj) {
+        // TODO This will probably impact performance negatively.  Need to check and if so do 
+        // in memory caching on top to reduce IO.
+        if(Objects.nonNull(stObj.getParametersId())) {
+            putLayerMetadata(
+                    stObj.getLayerName(), 
+                    "parameters."+stObj.getParametersId(), 
+                    ParametersUtils.getKvp(stObj.getParameters()));
+        }
+    }
+    
     public void clear() throws StorageException {
         throw new StorageException("Not implemented yet!");
     }
@@ -605,11 +623,16 @@ public class FileBlobStore implements BlobStore {
         Properties metadata = getLayerMetadata(layerName);
         String value = metadata.getProperty(key);
         if (value != null) {
-            try {
-                value = URLDecoder.decode(value, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
+            value = urlDecUtf8(value);
+        }
+        return value;
+    }
+
+    private static String urlDecUtf8(String value) {
+        try {
+            value = URLDecoder.decode(value, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
         return value;
     }
@@ -657,7 +680,7 @@ public class FileBlobStore implements BlobStore {
             }
         }
     }
-
+    
     private Properties getLayerMetadata(final String layerName) {
         final File metadataFile = getMetadataFile(layerName);
         Properties properties = new Properties();
@@ -732,11 +755,23 @@ public class FileBlobStore implements BlobStore {
         // TODO Auto-generated method stub
         return false;
     }
-
+    
+    public boolean isParameterIdCached(String parameterId) {
+        // TODO
+        return true;
+    }
+    
     @Override
     public Collection<Map<String, String>> getParameters(String layerName) {
-        // TODO Auto-generated method stub
-        return Collections.emptyList();
+        Properties p = getLayerMetadata(layerName);
+        final int prefixLength = "parameters.".length();
+        return p.stringPropertyNames().parallelStream()
+            .filter(key->key.startsWith("parameters."))
+            .filter(key->isParameterIdCached(key.substring(prefixLength)))
+            .map(p::getProperty)
+            .map(FileBlobStore::urlDecUtf8)
+            .map(ParametersUtils::getMap)
+            .collect(Collectors.toSet());
     }
 
 }

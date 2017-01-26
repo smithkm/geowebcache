@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.nio.charset.StandardCharsets;
@@ -332,6 +333,55 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(store.get(fromCache2_3), is(true));
         assertThat(fromCache2_3, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_3, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
+    }
+    
+    @Test
+    public void testMetadata() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
+        store.putLayerMetadata("testLayer", "testKey", "testValue");
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("testValue"));
+    }
+    
+    @Test
+    public void testMetadataWithEqualsInKey() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "test=Key"), nullValue());
+        store.putLayerMetadata("testLayer", "test=Key", "testValue");
+        assertThat(store.getLayerMetadata("testLayer", "test=Key"), equalTo("testValue"));
+    }
+    
+    @Test
+    public void testMetadataWithEqualsInValue() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
+        store.putLayerMetadata("testLayer", "testKey", "test=Value");
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("test=Value"));
+    }
+    
+    @Test
+    public void testMetadataWithAmpInKey() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "test&Key"), nullValue());
+        store.putLayerMetadata("testLayer", "test&Key", "testValue");
+        assertThat(store.getLayerMetadata("testLayer", "test&Key"), equalTo("testValue"));
+    }
+    
+    @Test
+    public void testMetadataWithAmpInValue() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
+        store.putLayerMetadata("testLayer", "testKey", "test&Value");
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("test&Value"));
+    }
+    
+    @Test
+    public void testMetadataWithPercentInKey() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "test%Key"), nullValue());
+        store.putLayerMetadata("testLayer", "test%Key", "testValue");
+        assertThat(store.getLayerMetadata("testLayer", "test%Key"), equalTo("testValue"));
+    }
+    
+    @Test
+    public void testMetadataWithPercentInValue() throws Exception {
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
+        store.putLayerMetadata("testLayer", "testKey", "test%Value");
+        assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("test%Value"));
     }
     
     @Test

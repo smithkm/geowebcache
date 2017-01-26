@@ -17,6 +17,7 @@
 
 package org.geowebcache.storage;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -444,6 +445,19 @@ public class CompositeBlobStore implements BlobStore {
         }
 
         return new ConcurrentHashMap<>(stores);
+    }
+
+    @Override
+    public boolean deleteByParameters(String layerName, String parametersId)
+            throws StorageException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public Collection<Map<String, String>> getParameters(String layerName) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -405,5 +406,18 @@ public class S3BlobStore implements BlobStore {
         final String coordsPrefix = keyBuilder.forLayer(layerName);
         boolean layerExists = s3Ops.prefixExists(coordsPrefix);
         return layerExists;
+    }
+
+    @Override
+    public boolean deleteByParameters(String layerName, String parametersId)
+            throws StorageException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public Collection<Map<String, String>> getParameters(String layerName) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

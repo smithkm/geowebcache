@@ -20,7 +20,7 @@ package org.geowebcache.storage;
 import java.util.Collection;
 import java.util.Map;
 
-import org.geowebcache.storage.blobstore.file.FilePathGenerator;
+import org.geowebcache.filter.parameters.ParametersUtils;
 
 /**
  * Manages the persistence of the actual data contained in cacheable objects (tiles, WFS responses).
@@ -60,7 +60,7 @@ public interface BlobStore {
      */
     public default boolean deleteByParameters(final String layerName, final Map<String, String> parameters)
             throws StorageException {
-        return deleteByParameters(layerName, FilePathGenerator.getParametersId(parameters));
+        return deleteByParameters(layerName, ParametersUtils.getId(parameters));
     }
     
     /**

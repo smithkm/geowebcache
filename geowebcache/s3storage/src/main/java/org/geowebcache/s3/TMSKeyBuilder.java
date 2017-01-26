@@ -21,13 +21,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Map;
 
 import org.geowebcache.GeoWebCacheException;
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
-import org.geowebcache.storage.blobstore.file.FilePathGenerator;
 
 import com.google.common.base.Throwables;
 
@@ -89,7 +89,7 @@ final class TMSKeyBuilder {
         String parametersId = obj.getParametersId();
         if (parametersId == null) {
             Map<String, String> parameters = obj.getParameters();
-            parametersId = FilePathGenerator.getParametersId(parameters);
+            parametersId = ParametersUtils.getId(parameters);
             if (parametersId == null) {
                 parametersId = "default";
             } else {
@@ -146,7 +146,7 @@ final class TMSKeyBuilder {
         String parametersId = obj.getParametersId();
         if (parametersId == null) {
             Map<String, String> parameters = obj.getParameters();
-            parametersId = FilePathGenerator.getParametersId(parameters);
+            parametersId = ParametersUtils.getId(parameters);
             if (parametersId == null) {
                 parametersId = "default";
             } else {
