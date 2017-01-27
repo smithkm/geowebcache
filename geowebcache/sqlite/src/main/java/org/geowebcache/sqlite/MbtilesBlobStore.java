@@ -40,6 +40,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -640,5 +641,18 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
                 }
             }
         }
+    }
+
+    @Override
+    public boolean deleteByParameters(String layerName, String parametersId)
+            throws StorageException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public Collection<Map<String, String>> getParameters(String layerName) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

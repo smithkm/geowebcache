@@ -48,7 +48,7 @@ public class LayerCacheInfoBuilderTest extends TestCase {
     FilePathGenerator pathGenerator = new FilePathGenerator("") {
         protected String getParametersId(String base, java.util.Map<String,String> parameters) throws IOException {
             // we assume no collisions for these tests
-            String parametersKvp = ParametersUtils.getParametersKvp(parameters);
+            String parametersKvp = ParametersUtils.getKvp(parameters);
             return buildKey(parametersKvp);
         };
     };
