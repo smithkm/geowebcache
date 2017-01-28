@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.io.ByteArrayResource;
 import org.junit.After;
 import org.junit.Before;
@@ -393,5 +394,55 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(store.getParameters("testLayer"), containsInAnyOrder(params1));
         store.put(toCache2);
         assertThat(store.getParameters("testLayer"), containsInAnyOrder(params1, params2));
+    }
+    
+    @Test
+    public void testDeleteByParametersId() throws Exception {
+        Map<String, String> params1 = Collections.singletonMap("testKey", "testValue1");
+        String paramID1 = ParametersUtils.getId(params1);
+        Map<String, String> params2 = Collections.singletonMap("testKey", "testValue2");
+        String paramID2 = ParametersUtils.getId(params2);
+        TileObject toCache1 = TileObject.createCompleteTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params1, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
+        TileObject toCache2 = TileObject.createCompleteTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2, new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)));
+        BlobStoreListener listener = EasyMock.createMock(BlobStoreListener.class);
+        store.addListener(listener);
+        final long size1 = toCache1.getBlobSize();
+        final long size2 = toCache2.getBlobSize();
+        
+        TileObject fromCache1_1 = TileObject.createQueryTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params1);
+        TileObject fromCache2_1 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
+        TileObject fromCache1_2 = TileObject.createQueryTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params1);
+        TileObject fromCache2_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
+        TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
+        
+        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID1), eq(0L), eq(0L), eq(0), 
+                geq(size1)
+                );
+        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID2), eq(0L), eq(0L), eq(0), 
+                geq(size2)
+                );
+        
+        EasyMock.replay(listener);
+        
+        store.put(toCache1);
+        assertThat(store.get(fromCache2_1), is(false));
+        store.put(toCache2);
+        EasyMock.verify(listener);
+        assertThat(store.get(fromCache1_1), is(true));
+        assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
+        assertThat(fromCache1_1, hasProperty("blob",resource(new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)))));
+        assertThat(store.get(fromCache2_2), is(true));
+        assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
+        assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
+        EasyMock.reset(listener);
+        listener.parametersDeleted(eq("testLayer"), eq(paramID1));
+        EasyMock.replay(listener);
+        store.deleteByParametersId("testLayer", paramID1);
+        EasyMock.verify(listener);
+        assertThat(store.get(fromCache1_2), is(false));
+        assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
+        assertThat(store.get(fromCache2_3), is(true));
+        assertThat(fromCache2_3, hasProperty("blobSize", is((int)size2)));
+        assertThat(fromCache2_3, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
     }
 }

@@ -750,10 +750,33 @@ public class FileBlobStore implements BlobStore {
     }
 
     @Override
-    public boolean deleteByParameters(String layerName, String parametersId)
+    public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
-        // TODO Auto-generated method stub
-        return false;
+        
+        final File layerPath = getLayerPath(layerName);
+        if (!layerPath.exists() || !layerPath.canWrite()) {
+            log.info(layerPath + " does not exist or is not writable");
+            return false;
+        }
+        
+        File[] gridSubsetCaches = layerPath.listFiles(new FileFilter() {
+            public boolean accept(File pathname) {
+                if (!pathname.isDirectory()) {
+                    return false;
+                }
+                String dirName = pathname.getName();
+                return dirName.endsWith(parametersId);
+            }
+        });
+        
+        for (File gridSubsetCache : gridSubsetCaches) {
+            String target = filteredLayerName(layerName) + "_" + gridSubsetCache.getName();
+            stageDelete(gridSubsetCache, target);
+        }
+        
+        listeners.sendParametersDeleted(layerName, parametersId);
+        
+        return true;
     }
     
     public boolean isParameterIdCached(String parameterId) {

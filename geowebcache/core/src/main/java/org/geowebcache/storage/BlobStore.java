@@ -60,7 +60,7 @@ public interface BlobStore {
      */
     public default boolean deleteByParameters(final String layerName, final Map<String, String> parameters)
             throws StorageException {
-        return deleteByParameters(layerName, ParametersUtils.getId(parameters));
+        return deleteByParametersId(layerName, ParametersUtils.getId(parameters));
     }
     
     /**
@@ -71,7 +71,7 @@ public interface BlobStore {
      * @return {@literal true} if successful, {@literal false} otherwise
      * @throws StorageException
      */
-    public boolean deleteByParameters(final String layerName, String parametersId)
+    public boolean deleteByParametersId(final String layerName, String parametersId)
             throws StorageException;
 
     /**

@@ -142,7 +142,7 @@ public class NullBlobStore implements BlobStore {
 	}
 
     @Override
-    public boolean deleteByParameters(String layerName, String parametersId)
+    public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
         // TODO Auto-generated method stub
         return false;

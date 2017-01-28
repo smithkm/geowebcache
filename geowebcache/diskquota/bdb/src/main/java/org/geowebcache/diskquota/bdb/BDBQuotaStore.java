@@ -402,49 +402,17 @@ public class BDBQuotaStore implements QuotaStore {
         }
     }
 
-    private class DeleteLayer implements Callable<Void> {
-
-        private final String layerName;
-
+    private class DeleteLayer extends Deleter {
+        
         public DeleteLayer(String layerName) {
-            this.layerName = layerName;
+            super(layerName);
         }
-
-        public Void call() throws Exception {
-            Transaction transaction = entityStore.getEnvironment().beginTransaction(null, null);
-            try {
-                call(transaction);
-                transaction.commit();
-            } catch (RuntimeException e) {
-                transaction.abort();
-                throw e;
-            }
-            return null;
+        
+        @Override
+        protected boolean testForDelete(TileSet tileSet) {
+            return true;
         }
-
-        public void call(Transaction transaction) {
-
-            EntityCursor<TileSet> tileSets = tileSetsByLayer.entities(transaction, layerName, true,
-                    layerName, true, null);
-            try {
-                TileSet tileSet;
-                Quota freed;
-                Quota global;
-                while (null != (tileSet = tileSets.next())) {
-                    freed = usedQuotaByTileSetId
-                            .get(transaction, tileSet.getId(), LockMode.DEFAULT);
-                    global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
-                            LockMode.DEFAULT);
-
-                    tileSets.delete();
-                    global.subtract(freed.getBytes());
-                    usedQuotaById.put(transaction, global);
-                }
-            } finally {
-                tileSets.close();
-            }
-        }
-
+        
     }
 
     /**
@@ -458,42 +426,51 @@ public class BDBQuotaStore implements QuotaStore {
     public void deleteGridSubset(String layerName, String gridSetId) {
         issue(new DeleteLayerGridSubset(layerName, gridSetId));
     }
-
-    private class DeleteLayerGridSubset implements Callable<Void> {
-
-        private final String layerName;
-
+    
+    public void deleteParameters(String layerName, String parametersId) {
+        issue(new DeleteLayerParameters(layerName, parametersId));
+    }
+    
+    private class DeleteLayerGridSubset extends Deleter {
+        
         private final String gridSetId;
-
+        
         public DeleteLayerGridSubset(String layerName, String gridSetId) {
-            this.layerName = layerName;
+            super(layerName);
             this.gridSetId = gridSetId;
         }
+        
+        protected boolean testForDelete(TileSet tileSet) {
+            return tileSet.getGridsetId().equals(gridSetId);
+        }
+    }
+    
+    private class DeleteLayerParameters extends Deleter {
+        
+        private final String parametersId;
+        
+        public DeleteLayerParameters(String layerName, String parametersId) {
+            super(layerName);
+            this.parametersId = parametersId;
+        }
+        
+        protected boolean testForDelete(TileSet tileSet) {
+            return tileSet.getGridsetId().equals(parametersId);
+        }
+    }
+    
+    abstract private class Deleter implements Callable<Void> {
 
-        public Void call() {
+        private final String layerName;
+        
+        public Deleter(String layerName) {
+            this.layerName = layerName;
+        }
+        
+        public Void call() throws Exception {
             Transaction transaction = entityStore.getEnvironment().beginTransaction(null, null);
             try {
-                EntityCursor<TileSet> tileSets = tileSetsByLayer.entities(transaction, layerName,
-                        true, layerName, true, null);
-                TileSet tileSet;
-                Quota freed;
-                Quota global;
-                try {
-                    while (null != (tileSet = tileSets.next())) {
-                        if (tileSet.getGridsetId().equals(gridSetId)) {
-                            freed = usedQuotaByTileSetId.get(transaction, tileSet.getId(),
-                                    LockMode.DEFAULT);
-                            global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
-                                    LockMode.DEFAULT);
-
-                            tileSets.delete();
-                            global.subtract(freed.getBytes());
-                            usedQuotaById.put(transaction, global);
-                        }
-                    }
-                } finally {
-                    tileSets.close();
-                }
+                call(transaction);
                 transaction.commit();
             } catch (RuntimeException e) {
                 transaction.abort();
@@ -501,6 +478,32 @@ public class BDBQuotaStore implements QuotaStore {
             }
             return null;
         }
+        
+        public void call(Transaction transaction) {
+            EntityCursor<TileSet> tileSets = tileSetsByLayer.entities(transaction, layerName,
+                    true, layerName, true, null);
+            TileSet tileSet;
+            Quota freed;
+            Quota global;
+            try {
+                while (null != (tileSet = tileSets.next())) {
+                    if (testForDelete(tileSet)) {
+                        freed = usedQuotaByTileSetId.get(transaction, tileSet.getId(),
+                                LockMode.DEFAULT);
+                        global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
+                                LockMode.DEFAULT);
+                        
+                        tileSets.delete();
+                        global.subtract(freed.getBytes());
+                        usedQuotaById.put(transaction, global);
+                    }
+                }
+            } finally {
+                tileSets.close();
+            }
+        }
+        
+        abstract protected boolean testForDelete(TileSet tileSet);
     }
 
     /**
