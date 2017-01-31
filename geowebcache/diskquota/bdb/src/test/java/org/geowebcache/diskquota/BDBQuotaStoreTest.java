@@ -215,29 +215,6 @@ public class BDBQuotaStoreTest {
         assertThat(store, hasProperty("globallyUsedQuota", bytes(500)));
     }
 
-    
-    @Test
-    public void testDeleteGridset() throws InterruptedException {
-        String layerName = tilePageCalculator.getLayerNames().iterator().next();
-        // make sure the layer is there and has stuff
-        assertThat(store.getUsedQuotaByLayerName(layerName), notNullValue());
-
-        TileSet tileSet = tilePageCalculator.getTileSetsFor(layerName).iterator().next();
-        TilePage page = new TilePage(tileSet.getId(), 0, 0, (byte) 0);
-        store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
-        // page.setNumHits(10);
-        // page.setLastAccessTime(System.currentTimeMillis());
-        // store.addHitsAndSetAccesTime(page);
-
-        assertThat(store.getTileSetById(tileSet.getId()), notNullValue());
-
-        store.deleteLayer(layerName);
-
-        // cascade deleted?
-        assertThat(store.getLeastRecentlyUsedPage(Collections.singleton(layerName)), Matchers.nullValue());
-        assertThat(store.getUsedQuotaByLayerName(layerName), bytes(BigInteger.ZERO));
-    }
-
     @Test
     public void testRenameLayer() throws InterruptedException {
         final String oldLayerName = tilePageCalculator.getLayerNames().iterator().next();
