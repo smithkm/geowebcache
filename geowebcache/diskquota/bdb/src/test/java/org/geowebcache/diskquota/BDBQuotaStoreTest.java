@@ -1,7 +1,5 @@
 package org.geowebcache.diskquota;
 
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
