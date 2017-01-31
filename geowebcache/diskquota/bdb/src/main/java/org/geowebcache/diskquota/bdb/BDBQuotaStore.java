@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
@@ -54,6 +55,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
 
+import com.google.common.base.Objects;
 import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
@@ -247,7 +249,7 @@ public class BDBQuotaStore implements QuotaStore {
                             + "' as it does not exist anymore...");
                     // do not call issue since we're already running on the transaction thread here
                     try {
-                        new DeleteLayer(layerName).call(transaction);
+                        new Deleter(layerName, ts->true).call(transaction);
                     } catch (Exception e) {
                         log.warn("Error deleting disk quota information for layer '" + layerName
                                 + "'", e);
@@ -402,69 +404,32 @@ public class BDBQuotaStore implements QuotaStore {
         }
     }
 
-    private class DeleteLayer extends Deleter {
-        
-        public DeleteLayer(String layerName) {
-            super(layerName);
-        }
-        
-        @Override
-        protected boolean testForDelete(TileSet tileSet) {
-            return true;
-        }
-        
-    }
-
     /**
      * @see org.geowebcache.diskquota.QuotaStore#deleteLayer(java.lang.String)
      */
     public void deleteLayer(final String layerName) {
         Assert.notNull(layerName);
-        issue(new DeleteLayer(layerName));
+        issue(new Deleter(layerName, ts->true));
     }
 
     public void deleteGridSubset(String layerName, String gridSetId) {
-        issue(new DeleteLayerGridSubset(layerName, gridSetId));
+        issue(new Deleter(layerName, ts->Objects.equal(ts.getGridsetId(),gridSetId)));
     }
     
     public void deleteParameters(String layerName, String parametersId) {
-        issue(new DeleteLayerParameters(layerName, parametersId));
+        issue(new Deleter(layerName, ts->Objects.equal(ts.getParametersId(),parametersId)));
     }
     
-    private class DeleteLayerGridSubset extends Deleter {
-        
-        private final String gridSetId;
-        
-        public DeleteLayerGridSubset(String layerName, String gridSetId) {
-            super(layerName);
-            this.gridSetId = gridSetId;
-        }
-        
-        protected boolean testForDelete(TileSet tileSet) {
-            return tileSet.getGridsetId().equals(gridSetId);
-        }
-    }
+
     
-    private class DeleteLayerParameters extends Deleter {
-        
-        private final String parametersId;
-        
-        public DeleteLayerParameters(String layerName, String parametersId) {
-            super(layerName);
-            this.parametersId = parametersId;
-        }
-        
-        protected boolean testForDelete(TileSet tileSet) {
-            return tileSet.getGridsetId().equals(parametersId);
-        }
-    }
-    
-    abstract private class Deleter implements Callable<Void> {
+    private class Deleter implements Callable<Void> {
 
         private final String layerName;
+        Predicate<TileSet> shouldDelete;
         
-        public Deleter(String layerName) {
+        public Deleter(String layerName, Predicate<TileSet> shouldDelete) {
             this.layerName = layerName;
+            this.shouldDelete = shouldDelete;
         }
         
         public Void call() throws Exception {
@@ -487,7 +452,7 @@ public class BDBQuotaStore implements QuotaStore {
             Quota global;
             try {
                 while (null != (tileSet = tileSets.next())) {
-                    if (testForDelete(tileSet)) {
+                    if (shouldDelete.test(tileSet)) {
                         freed = usedQuotaByTileSetId.get(transaction, tileSet.getId(),
                                 LockMode.DEFAULT);
                         global = usedQuotaByTileSetId.get(transaction, GLOBAL_QUOTA_NAME,
@@ -502,8 +467,6 @@ public class BDBQuotaStore implements QuotaStore {
                 tileSets.close();
             }
         }
-        
-        abstract protected boolean testForDelete(TileSet tileSet);
     }
 
     /**
@@ -536,7 +499,7 @@ public class BDBQuotaStore implements QuotaStore {
             Transaction transaction = entityStore.getEnvironment().beginTransaction(null, null);
             try {
                 copyTileSets(transaction);
-                DeleteLayer deleteCommand = new DeleteLayer(oldLayerName);
+                Deleter deleteCommand = new Deleter(oldLayerName, ts->true);
                 deleteCommand.call(transaction);
                 transaction.commit();
             } catch (RuntimeException e) {
