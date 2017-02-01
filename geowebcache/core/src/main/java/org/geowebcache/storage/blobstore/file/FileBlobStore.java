@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -785,7 +786,7 @@ public class FileBlobStore implements BlobStore {
     }
     
     @Override
-    public Collection<Map<String, String>> getParameters(String layerName) {
+    public Set<Map<String, String>> getParameters(String layerName) {
         Properties p = getLayerMetadata(layerName);
         final int prefixLength = "parameters.".length();
         return p.stringPropertyNames().parallelStream()
@@ -796,5 +797,4 @@ public class FileBlobStore implements BlobStore {
             .map(ParametersUtils::getMap)
             .collect(Collectors.toSet());
     }
-
 }

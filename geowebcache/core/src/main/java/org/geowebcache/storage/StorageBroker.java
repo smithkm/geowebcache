@@ -1,5 +1,8 @@
 package org.geowebcache.storage;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Abstracts and manages the storing of cachable objects and their metadata.
  */
@@ -59,5 +62,9 @@ public interface StorageBroker {
     public abstract boolean getTransient(TileObject tile);
 
     public abstract void putTransient(TileObject tile);
+    
+    public abstract Set<String> getCachedParameterIds(String layerName);
+    
+    public abstract Set<Map<String, String>> getCachedParameters(String layerName);
 
 }

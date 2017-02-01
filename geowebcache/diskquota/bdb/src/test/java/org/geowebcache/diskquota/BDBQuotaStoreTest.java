@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.InputStream;
@@ -20,9 +21,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.easymock.Capture;
 import org.easymock.classextension.EasyMock;
 import org.geowebcache.config.Configuration;
 import org.geowebcache.config.XMLConfiguration;
@@ -36,15 +41,21 @@ import org.geowebcache.diskquota.storage.SystemUtils;
 import org.geowebcache.diskquota.storage.TilePage;
 import org.geowebcache.diskquota.storage.TilePageCalculator;
 import org.geowebcache.diskquota.storage.TileSet;
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.layer.TileLayerDispatcher;
+import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.DefaultStorageFinder;
+import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.util.FileMatchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import com.sun.media.imageio.stream.StreamSegment;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -62,6 +73,8 @@ public class BDBQuotaStoreTest {
     TileLayerDispatcher layerDispatcher;
 
     DefaultStorageFinder cacheDirFinder;
+    
+    StorageBroker storageBroker;
 
     @Rule
     public TemporaryFolder targetDir = new TemporaryFolder();
@@ -69,6 +82,9 @@ public class BDBQuotaStoreTest {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    Map<String, Set<String>> parameterIdsMap;
+    Map<String, Set<Map<String, String>>> parametersMap;
+    
     @Before
     public void setUp() throws Exception {
 
@@ -80,13 +96,33 @@ public class BDBQuotaStoreTest {
                 .andReturn(null).anyTimes();
         EasyMock.replay(cacheDirFinder);
 
+        Capture<String> layerNameCap = new Capture<>();
+        storageBroker = EasyMock.createMock(StorageBroker.class);
+        EasyMock.expect(storageBroker.getCachedParameterIds(EasyMock.capture(layerNameCap)))
+            .andStubAnswer(()->parameterIdsMap.getOrDefault(
+                    layerNameCap.getValue(),
+                    Collections.singleton(null)));
+        EasyMock.replay(storageBroker);
+        parametersMap = new HashMap<>();
+        parametersMap.put("topp:states", Stream.of(
+                "STYLE=&SOMEPARAMETER=",
+                "STYLE=population&SOMEPARAMETER=2.0")
+                    .map(ParametersUtils::getMap)
+                    .collect(Collectors.toSet()));
+        parameterIdsMap= parametersMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, 
+                        e->e.getValue().stream()
+                            .map(ParametersUtils::getKvp)
+                            .collect(Collectors.toSet())
+                        ));
         XMLConfiguration xmlConfig = loadXMLConfig();
         LinkedList<Configuration> configList = new LinkedList<Configuration>();
         configList.add(xmlConfig);
 
         layerDispatcher = new TileLayerDispatcher(new GridSetBroker(true, true), configList);
 
-        tilePageCalculator = new TilePageCalculator(layerDispatcher);
+        tilePageCalculator = new TilePageCalculator(layerDispatcher, storageBroker);
 
         store = new BDBQuotaStore(cacheDirFinder, tilePageCalculator);
         store.startUp();
@@ -108,17 +144,30 @@ public class BDBQuotaStoreTest {
 
     @Test
     public void testInitialization() throws Exception {
+        String[] paramIds = parameterIdsMap.get("topp:states").toArray(new String[2]);
         assertThat(store, hasProperty("tileSets", containsInAnyOrder(
-                new TileSet("topp:states", "EPSG:900913", "image/png", null),
-                new TileSet("topp:states", "EPSG:900913", "image/jpeg", null),
-                new TileSet("topp:states", "EPSG:900913", "image/gif", null),
+                new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[0]),
+                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[0]),
+                new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[0]),
                 new TileSet("topp:states", "EPSG:900913", "application/vnd.google-earth.kml+xml",
-                        null),
-                new TileSet("topp:states", "EPSG:4326", "image/png", null),
-                new TileSet("topp:states", "EPSG:4326", "image/jpeg", null),
-                new TileSet("topp:states", "EPSG:4326", "image/gif", null),
+                        paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "image/png", paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "image/jpeg", paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "image/gif", paramIds[0]),
                 new TileSet("topp:states", "EPSG:4326", "application/vnd.google-earth.kml+xml",
-                        null),
+                        paramIds[0]),
+                
+                new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[1]),
+                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[1]),
+                new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[1]),
+                new TileSet("topp:states", "EPSG:900913", "application/vnd.google-earth.kml+xml",
+                        paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "image/png", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "image/jpeg", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "image/gif", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "application/vnd.google-earth.kml+xml",
+                        paramIds[1]),
+                
                 new TileSet("topp:states2", "EPSG:2163", "image/png", null),
                 new TileSet("topp:states2", "EPSG:2163", "image/jpeg", null))));
 
@@ -213,6 +262,95 @@ public class BDBQuotaStoreTest {
         store.addToQuotaAndTileCounts(tileSet, quotaDiff, tileCountDiffs);
 
         assertThat(store, hasProperty("globallyUsedQuota", bytes(500)));
+    }
+
+    
+    @Test
+    public void testDeleteGridset() throws InterruptedException {
+        String layerName = "topp:states";
+        String gridSetId = "EPSG:4326";
+        
+        long quotaToDelete = tilePageCalculator.getTileSetsFor(
+                layerName).stream()
+            .filter(ts->ts.getGridsetId().equals(gridSetId))
+            .map(ts->{
+                Quota quotaDiff = new Quota(42, StorageUnit.MiB);
+                try {
+                    store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                    TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                    store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                    return 42;
+                } catch (InterruptedException e) {
+                    throw new AssertionError("Unexpected Exception",e);
+                }
+            })
+            .collect(Collectors.summingLong(mb->mb*1024*1024));
+        assertThat(quotaToDelete, greaterThan(0L));
+        long quotaToKeep = tilePageCalculator.getTileSetsFor(layerName).stream()
+            .filter(ts->!ts.getGridsetId().equals(gridSetId))
+            .map(ts->{
+                Quota quotaDiff = new Quota(10, StorageUnit.MiB);
+                try {
+                    store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                    TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                    store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                    return 10;
+                } catch (InterruptedException e) {
+                    throw new AssertionError("Unexpected Exception",e);
+                }
+            })
+            .collect(Collectors.summingLong(mb->mb*1024*1024));
+        assertThat(quotaToKeep, greaterThan(0L));
+        
+        assertThat(store.getUsedQuotaByLayerName(layerName), bytes(quotaToDelete+quotaToKeep));
+        
+        store.deleteGridSubset(layerName, gridSetId);
+        
+        assertThat(store.getUsedQuotaByLayerName(layerName), bytes(quotaToKeep));
+    }
+    
+    @Test
+    public void testDeleteParameters() throws InterruptedException {
+        String layerName = "topp:states";
+        String parametersId = parameterIdsMap.get(layerName).iterator().next();
+        
+        long quotaToDelete = tilePageCalculator.getTileSetsFor(
+                layerName).stream()
+            .filter(ts->ts.getParametersId().equals(parametersId))
+            .map(ts->{
+                Quota quotaDiff = new Quota(42, StorageUnit.MiB);
+                try {
+                    store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                    TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                    store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                    return 42;
+                } catch (InterruptedException e) {
+                    throw new AssertionError("Unexpected Exception",e);
+                }
+            })
+            .collect(Collectors.summingLong(mb->mb*1024*1024));
+        assertThat(quotaToDelete, greaterThan(0L));
+        long quotaToKeep = tilePageCalculator.getTileSetsFor(layerName).stream()
+            .filter(ts->!ts.getParametersId().equals(parametersId))
+            .map(ts->{
+                Quota quotaDiff = new Quota(10, StorageUnit.MiB);
+                try {
+                    store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                    TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                    store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                    return 10;
+                } catch (InterruptedException e) {
+                    throw new AssertionError("Unexpected Exception",e);
+                }
+            })
+            .collect(Collectors.summingLong(mb->mb*1024*1024));
+        assertThat(quotaToKeep, greaterThan(0L));
+        
+        assertThat(store.getUsedQuotaByLayerName(layerName), bytes(quotaToDelete+quotaToKeep));
+        
+        store.deleteParameters(layerName, parametersId);
+        
+        assertThat(store.getUsedQuotaByLayerName(layerName), bytes(quotaToKeep));
     }
 
     @Test

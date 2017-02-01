@@ -19,6 +19,8 @@ package org.geowebcache.storage;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.geowebcache.filter.parameters.ParametersUtils;
 
@@ -143,7 +145,22 @@ public interface BlobStore {
      * @param layerName
      * @return
      */
-    public Collection<Map<String, String>> getParameters(String layerName);
+    public Set<Map<String, String>> getParameters(String layerName);
+    
+    /**
+     * Get the IDs of the cached parameter maps for a layer. 
+     * 
+     * <p>Stores that predate 1.11 should implement this to provide any parameters for which maps
+     * are not available.  Stores not using {@link ParametersUtils.getId} or which have more 
+     * efficient ways to provide it should also implement it.
+     * @param layerName
+     * @return
+     */
+    public default Set<String> getParameterIds(String layerName) {
+        return getParameters(layerName).stream()
+                .map(ParametersUtils::getId)
+                .collect(Collectors.toSet());
+    }
     
     
     /**

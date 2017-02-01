@@ -17,6 +17,9 @@
  */
 package org.geowebcache.storage;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.io.Resource;
@@ -111,5 +114,15 @@ public class DefaultStorageBroker implements StorageBroker {
      */
     public BlobStore getBlobStore(){
         return blobStore;
+    }
+    
+    @Override
+    public Set<String> getCachedParameterIds(String layerName) {
+        return this.blobStore.getParameterIds(layerName);
+    }
+    
+    @Override
+    public Set<Map<String, String>> getCachedParameters(String layerName) {
+        return this.blobStore.getParameters(layerName);
     }
 }

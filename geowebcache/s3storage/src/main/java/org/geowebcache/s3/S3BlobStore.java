@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -416,7 +417,7 @@ public class S3BlobStore implements BlobStore {
     }
 
     @Override
-    public Collection<Map<String, String>> getParameters(String layerName) {
+    public Set<Map<String, String>> getParameters(String layerName) {
         // TODO Auto-generated method stub
         return null;
     }

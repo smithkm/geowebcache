@@ -19,6 +19,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -753,7 +754,7 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
     }
 
     @Override
-    public Collection<Map<String, String>> getParameters(String layerName) {
+    public Set<Map<String, String>> getParameters(String layerName) {
         // TODO Auto-generated method stub
         return null;
     }
