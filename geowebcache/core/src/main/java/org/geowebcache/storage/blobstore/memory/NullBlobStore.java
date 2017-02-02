@@ -15,6 +15,7 @@
 package org.geowebcache.storage.blobstore.memory;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Collection;
 import java.util.HashMap;
@@ -109,7 +110,11 @@ public class NullBlobStore implements BlobStore {
         Properties properties = metadataMap.get(layerName);
         if (properties != null) {
             // Returns the property associated to the key
-            return (String) properties.get(key);
+            try {
+                return URLDecoder.decode((String) properties.get(key), "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                LOGGER.error(e.getLocalizedMessage(), e);
+            }
         }
         return null;
     }

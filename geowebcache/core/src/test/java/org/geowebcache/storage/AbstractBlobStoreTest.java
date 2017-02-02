@@ -34,6 +34,8 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     
     protected TestClass store;
     
+    protected boolean events = true;
+    
     /**
      * Set up the test store in {@link store}.
      */
@@ -64,9 +66,11 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         final long size = toCache.getBlobSize();
         TileObject fromCache = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", null);
         
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 geq(size) // Some stores have minimum block sizes and so have to pad this
-                );
+                );EasyMock.expectLastCall();
+        }
         
         EasyMock.replay(listener);
         
@@ -93,8 +97,10 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache2_1 = TileObject.createQueryTileObject("testLayer2", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", null);
         TileObject fromCache2_2 = TileObject.createQueryTileObject("testLayer2", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", null);
         
-        listener.tileStored(eq("testLayer1"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), geq(size1));
-        listener.tileStored(eq("testLayer2"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), geq(size2));
+        if(events) {
+            listener.tileStored(eq("testLayer1"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), geq(size1));
+            listener.tileStored(eq("testLayer2"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), geq(size2));
+        }
         
         EasyMock.replay(listener);
         
@@ -122,19 +128,26 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", null);
         
         Capture<Long> sizeCapture = new Capture<>();
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 capture(sizeCapture)
-                );
+                );EasyMock.expectLastCall();
+        }
         
         EasyMock.replay(listener);
         
         store.put(toCache);
-        long storedSize = sizeCapture.getValue();
         EasyMock.verify(listener);
+        long storedSize = 0;
+        if(events) {
+            storedSize=sizeCapture.getValue();
+        }
         EasyMock.reset(listener);
-        listener.tileDeleted(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileDeleted(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 eq(storedSize)
-                );
+                );EasyMock.expectLastCall();
+        }
         EasyMock.replay(listener);
         store.delete(remove);
         EasyMock.verify(listener);
@@ -152,20 +165,26 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", null);
         
         Capture<Long> sizeCapture = new Capture<>();
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events){
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 capture(sizeCapture)
-                );
-        
+                );EasyMock.expectLastCall();
+        }
         EasyMock.replay(listener);
         
         store.put(toCache1);
-        long storedSize = sizeCapture.getValue();
         EasyMock.verify(listener);
+        long storedSize = 0;
+        if(events){
+            storedSize = sizeCapture.getValue();
+        }
         EasyMock.reset(listener);
-        listener.tileUpdated(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0),
+        if(events){
+            listener.tileUpdated(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0),
                 geq(size2),
                 eq(storedSize)
-                );
+                );EasyMock.expectLastCall();
+        }
         EasyMock.replay(listener);
         store.put(toCache2);
         EasyMock.verify(listener);
@@ -191,20 +210,25 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         
         Capture<Long> sizeCapture1 = new Capture<>();
         Capture<Long> sizeCapture2 = new Capture<>();
-        listener.tileStored(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileStored(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 capture(sizeCapture1)
-                );
-        listener.tileStored(eq("testLayer"), eq("testGridSet2"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+                );EasyMock.expectLastCall();
+            listener.tileStored(eq("testLayer"), eq("testGridSet2"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 capture(sizeCapture2)
-                );
+                );EasyMock.expectLastCall();
+        }
         
         EasyMock.replay(listener);
         
         store.put(toCache1);
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
-        long storedSize1 = sizeCapture1.getValue();
         EasyMock.verify(listener);
+        long storedSize1 = 0;
+        if(events) {
+            storedSize1 = sizeCapture1.getValue();
+        }
         assertThat(store.get(fromCache1_1), is(true));
         assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
         assertThat(fromCache1_1, hasProperty("blob",resource(new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)))));
@@ -212,9 +236,11 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
         EasyMock.reset(listener);
-        listener.tileDeleted(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileDeleted(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 eq(storedSize1)
-                );
+                );EasyMock.expectLastCall();
+        }
         EasyMock.replay(listener);
         store.delete(remove);
         EasyMock.verify(listener);
@@ -240,12 +266,14 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache2_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet2", "image/png", null);
         TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet2", "image/png", null);
         
-        listener.tileStored(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileStored(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 geq(size1)
-                );
-        listener.tileStored(eq("testLayer"), eq("testGridSet2"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+                );EasyMock.expectLastCall();
+            listener.tileStored(eq("testLayer"), eq("testGridSet2"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
                 geq(size2)
-                );
+                );EasyMock.expectLastCall();
+        }
         
         EasyMock.replay(listener);
         
@@ -260,7 +288,9 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
         EasyMock.reset(listener);
-        listener.gridSubsetDeleted(eq("testLayer"), eq("testGridSet1"));
+        if(events) {
+            listener.gridSubsetDeleted(eq("testLayer"), eq("testGridSet1"));EasyMock.expectLastCall();
+        }
         EasyMock.replay(listener);
         store.deleteByGridsetId("testLayer", "testGridSet1");
         EasyMock.verify(listener);
@@ -293,25 +323,29 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         Capture<Long> sizeCapture2 = new Capture<>();
         Capture<String> pidCapture1 = new Capture<>();
         Capture<String> pidCapture2 = new Capture<>();
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), capture(pidCapture1), eq(0L), eq(0L), eq(0), 
+        if(events){
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), capture(pidCapture1), eq(0L), eq(0L), eq(0), 
                 capture(sizeCapture1)
-                );
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), capture(pidCapture2), eq(0L), eq(0L), eq(0), 
+                );EasyMock.expectLastCall();
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), capture(pidCapture2), eq(0L), eq(0L), eq(0), 
                 capture(sizeCapture2)
-                );
+                );EasyMock.expectLastCall();
+        }
         
         EasyMock.replay(listener);
         
         store.put(toCache1);
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
-        long storedSize1 = sizeCapture1.getValue();
         EasyMock.verify(listener);
-        
-        // parameter id strings should be non-null and not equal to one another
-        assertThat(pidCapture1.getValue(), notNullValue());
-        assertThat(pidCapture2.getValue(), notNullValue());
-        assertThat(pidCapture2.getValue(), not(pidCapture1.getValue()));
+        long storedSize1 = 0;
+        if(events) {
+            storedSize1 = sizeCapture1.getValue();
+            // parameter id strings should be non-null and not equal to one another
+            assertThat(pidCapture1.getValue(), notNullValue());
+            assertThat(pidCapture2.getValue(), notNullValue());
+            assertThat(pidCapture2.getValue(), not(pidCapture1.getValue()));
+        }
         
         assertThat(store.get(fromCache1_1), is(true));
         assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
@@ -320,9 +354,11 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
         EasyMock.reset(listener);
-        listener.tileDeleted(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(pidCapture1.getValue()), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileDeleted(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(pidCapture1.getValue()), eq(0L), eq(0L), eq(0), 
                 eq(storedSize1)
                 );
+        }
         EasyMock.replay(listener);
         store.delete(remove);
         EasyMock.verify(listener);
@@ -415,12 +451,14 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache2_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
         TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
         
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID1), eq(0L), eq(0L), eq(0), 
+        if(events) {
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID1), eq(0L), eq(0L), eq(0), 
                 geq(size1)
                 );
-        listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID2), eq(0L), eq(0L), eq(0), 
+            listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID2), eq(0L), eq(0L), eq(0), 
                 geq(size2)
                 );
+        }
         
         EasyMock.replay(listener);
         
@@ -435,7 +473,9 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
         EasyMock.reset(listener);
-        listener.parametersDeleted(eq("testLayer"), eq(paramID1));
+        if(events) {
+            listener.parametersDeleted(eq("testLayer"), eq(paramID1));
+        }
         EasyMock.replay(listener);
         store.deleteByParametersId("testLayer", paramID1);
         EasyMock.verify(listener);
