@@ -256,6 +256,38 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         BlobStoreListener listener = EasyMock.createMock(BlobStoreListener.class);
         store.addListener(listener);
         TileObject toCache1 = TileObject.createCompleteTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
+        final long size1 = toCache1.getBlobSize();
+        
+        TileObject fromCache1_1 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null);
+        TileObject fromCache1_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null);
+        
+        if(events) {
+            listener.tileStored(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
+                geq(size1)
+                );EasyMock.expectLastCall();
+        }
+        
+        EasyMock.replay(listener);
+        
+        store.put(toCache1);
+        EasyMock.verify(listener);
+        assertThat(store.get(fromCache1_1), is(true));
+        assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
+        assertThat(fromCache1_1, hasProperty("blob",resource(new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)))));
+        EasyMock.reset(listener);
+        if(events) {
+            listener.gridSubsetDeleted(eq("testLayer"), eq("testGridSet1"));EasyMock.expectLastCall();
+        }
+        EasyMock.replay(listener);
+        store.deleteByGridsetId("testLayer", "testGridSet1");
+        EasyMock.verify(listener);
+        assertThat(store.get(fromCache1_2), is(false));
+        assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
+    }
+    
+    @Test
+    public void testDeleteGridsetDoesntDeleteOthers() throws Exception {
+        TileObject toCache1 = TileObject.createCompleteTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
         TileObject toCache2 = TileObject.createCompleteTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet2", "image/png", null, new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)));
         final long size1 = toCache1.getBlobSize();
         final long size2 = toCache2.getBlobSize();
@@ -266,41 +298,22 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache2_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet2", "image/png", null);
         TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet2", "image/png", null);
         
-        if(events) {
-            listener.tileStored(eq("testLayer"), eq("testGridSet1"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
-                geq(size1)
-                );EasyMock.expectLastCall();
-            listener.tileStored(eq("testLayer"), eq("testGridSet2"), eq("image/png"), eq(null), eq(0L), eq(0L), eq(0), 
-                geq(size2)
-                );EasyMock.expectLastCall();
-        }
-        
-        EasyMock.replay(listener);
-        
         store.put(toCache1);
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
-        EasyMock.verify(listener);
         assertThat(store.get(fromCache1_1), is(true));
         assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
         assertThat(fromCache1_1, hasProperty("blob",resource(new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)))));
         assertThat(store.get(fromCache2_2), is(true));
         assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
-        EasyMock.reset(listener);
-        if(events) {
-            listener.gridSubsetDeleted(eq("testLayer"), eq("testGridSet1"));EasyMock.expectLastCall();
-        }
-        EasyMock.replay(listener);
         store.deleteByGridsetId("testLayer", "testGridSet1");
-        EasyMock.verify(listener);
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
         assertThat(store.get(fromCache2_3), is(true));
         assertThat(fromCache2_3, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_3, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
     }
-    
     @Test
     public void testParameters() throws Exception {
         BlobStoreListener listener = EasyMock.createMock(BlobStoreListener.class);

@@ -44,7 +44,7 @@ public class NullBlobStoreComformanceTest extends AbstractBlobStoreTest<NullBlob
 
     @Override
     @Ignore @Test
-    public void testDeleteGridset() throws Exception {
+    public void testDeleteGridsetDoesntDeleteOthers() throws Exception {
         super.testDeleteGridset();
     }
 
