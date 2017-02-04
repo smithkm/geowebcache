@@ -870,4 +870,8 @@ public class JDBCQuotaStore implements QuotaStore {
             return new TilePage(tileSetId, pageX, pageY, pageZ, creationTimeMinutes);
         }
     }
+
+    @Override
+    public void deleteParameters(final String layerName, final String parametersId) {
+    }
 }
