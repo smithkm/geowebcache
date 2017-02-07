@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorCompletionService;
@@ -256,6 +257,7 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
                 byte[] olData = mbtiles.loadTile(tile.getXYZ()[2], tile.getXYZ()[0], tile.getXYZ()[1]).getData();
                 if (olData != null) {
                     // tile exists so let's remove the tile
+                    tile.setBlobSize(olData.length);
                     mbtiles.saveTile(gtTile);
                     // updating the listener if any
                     listeners.sendTileDeleted(tile);
@@ -651,7 +653,7 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
     }
 
     @Override
-    public Collection<Map<String, String>> getParameters(String layerName) {
+    public Set<Map<String, String>> getParameters(String layerName) {
         // TODO Auto-generated method stub
         return null;
     }
