@@ -1,5 +1,9 @@
 package org.geowebcache.diskquota.jdbc;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +53,11 @@ import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.storage.DefaultStorageFinder;
 import org.geowebcache.storage.StorageBroker;
+import org.junit.Assert;
+
+import com.google.common.base.Objects;
+
+import org.hamcrest.Matchers;
 
 public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
 
@@ -131,6 +140,10 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
     
     Map<String, Set<String>> parameterIdsMap;
     Map<String, Set<Map<String, String>>> parametersMap;
+
+    private Collection<TileSet> expectedTileSets;
+
+    private String[] paramIds;
     
     @Override
     protected void setUpInternal() throws Exception {
@@ -187,6 +200,31 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
         store.initialize();
 
         testTileSet = tilePageCalculator.getTileSetsFor("topp:states2").iterator().next();
+        
+        paramIds = parameterIdsMap.get("topp:states").toArray(new String[2]);
+        
+        expectedTileSets = Arrays.asList(
+                new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[0]),
+                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[0]),
+                new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[0]),
+                new TileSet("topp:states", "EPSG:900913", "application/vnd.google-earth.kml+xml", paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "image/png", paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "image/jpeg", paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "image/gif", paramIds[0]),
+                new TileSet("topp:states", "EPSG:4326", "application/vnd.google-earth.kml+xml", paramIds[0]),
+                
+                new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[1]),
+                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[1]),
+                new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[1]),
+                new TileSet("topp:states", "EPSG:900913", "application/vnd.google-earth.kml+xml", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "image/png", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "image/jpeg", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "image/gif", paramIds[1]),
+                new TileSet("topp:states", "EPSG:4326", "application/vnd.google-earth.kml+xml",  paramIds[1]),
+                
+                new TileSet("topp:states2", "EPSG:2163", "image/png", null),
+                new TileSet("topp:states2", "EPSG:2163", "image/jpeg", null)
+                );
     }
 
     
@@ -227,28 +265,6 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
         assertEquals(18, tileSets.size());
         
         String[] paramIds = parameterIdsMap.get("topp:states").toArray(new String[2]);
-        Collection<TileSet> expectedTileSets = Arrays.asList(
-                new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[0]),
-                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[0]),
-                new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[0]),
-                new TileSet("topp:states", "EPSG:900913", "application/vnd.google-earth.kml+xml", paramIds[0]),
-                new TileSet("topp:states", "EPSG:4326", "image/png", paramIds[0]),
-                new TileSet("topp:states", "EPSG:4326", "image/jpeg", paramIds[0]),
-                new TileSet("topp:states", "EPSG:4326", "image/gif", paramIds[0]),
-                new TileSet("topp:states", "EPSG:4326", "application/vnd.google-earth.kml+xml", paramIds[0]),
-                
-                new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[1]),
-                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[1]),
-                new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[1]),
-                new TileSet("topp:states", "EPSG:900913", "application/vnd.google-earth.kml+xml", paramIds[1]),
-                new TileSet("topp:states", "EPSG:4326", "image/png", paramIds[1]),
-                new TileSet("topp:states", "EPSG:4326", "image/jpeg", paramIds[1]),
-                new TileSet("topp:states", "EPSG:4326", "image/gif", paramIds[1]),
-                new TileSet("topp:states", "EPSG:4326", "application/vnd.google-earth.kml+xml",  paramIds[1]),
-                
-                new TileSet("topp:states2", "EPSG:2163", "image/png", null),
-                new TileSet("topp:states2", "EPSG:2163", "image/jpeg", null)
-                );
         
         for(TileSet tileSet : expectedTileSets) {
             assertTrue(tileSets.contains(tileSet));
@@ -324,9 +340,9 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
     public void testDeleteGridSet() throws InterruptedException {
         // put some data into the two gridsets
         String layerName = "topp:states";
-        TileSet tset1 = new TileSet(layerName, "EPSG:4326", "image/jpeg", null);
+        TileSet tset1 = new TileSet(layerName, "EPSG:4326", "image/jpeg", paramIds[0]);
         addToQuotaStore(tset1);
-        TileSet tset2 = new TileSet(layerName, "EPSG:900913", "image/jpeg", null);
+        TileSet tset2 = new TileSet(layerName, "EPSG:900913", "image/jpeg", paramIds[0]);
         addToQuotaStore(tset2);
         Quota tset1Quota = store.getUsedQuotaByTileSetId(tset1.getId());
         Quota tset2Quota = store.getUsedQuotaByTileSetId(tset2.getId());
@@ -336,10 +352,22 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
         sum.add(tset2Quota);
         assertEquals(globalQuota.getBytes(), sum.getBytes());
         
-        assertEquals(18, countTileSetsByLayerName("topp:states"));
+        assertThat(store.getTileSets(), 
+                containsInAnyOrder(
+                        expectedTileSets.stream()
+                            .map(Matchers::equalTo)
+                            .collect(Collectors.toSet())));
+        
         store.deleteGridSubset("topp:states", "EPSG:900913");
-        assertEquals(9, countTileSetsByLayerName("topp:states"));
-
+        
+        assertThat(store.getTileSets(), 
+                containsInAnyOrder(
+                        expectedTileSets.stream()
+                            .filter(ts->!(ts.getGridsetId().equals("EPSG:900913") 
+                                    && ts.getLayerName().equals(layerName)))
+                            .map(Matchers::equalTo)
+                            .collect(Collectors.toSet())));
+        
         // verify the quota for tset2 got erased and that now the total is equal to tset1
         tset1Quota = store.getUsedQuotaByTileSetId(tset1.getId());
         tset2Quota = store.getUsedQuotaByTileSetId(tset2.getId());
@@ -350,9 +378,8 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
     }
     
     public void testDeleteParameters() throws InterruptedException {
-        // put some data into the two gridsets
+        // put some data into the two parameterizations
         String layerName = "topp:states";
-        String[] paramIds = parameterIdsMap.get("topp:states").toArray(new String[2]);
         TileSet tset1 = new TileSet(layerName, "EPSG:4326", "image/jpeg", paramIds[0]);
         addToQuotaStore(tset1);
         TileSet tset2 = new TileSet(layerName, "EPSG:4326", "image/jpeg", paramIds[1]);
@@ -365,10 +392,22 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
         sum.add(tset2Quota);
         assertEquals(globalQuota.getBytes(), sum.getBytes());
         
-        assertEquals(16, countTileSetsByLayerName("topp:states"));
-        store.deleteParameters("topp:states", paramIds[0]);
-        assertEquals(8, countTileSetsByLayerName("topp:states"));
-
+        assertThat(store.getTileSets(), 
+                containsInAnyOrder(
+                        expectedTileSets.stream()
+                            .map(Matchers::equalTo)
+                            .collect(Collectors.toSet())));
+        
+        store.deleteParameters("topp:states", paramIds[1]);
+        
+        assertThat(store.getTileSets(), 
+                containsInAnyOrder(
+                        expectedTileSets.stream()
+                            .filter(ts->!(Objects.equal(ts.getParametersId(), paramIds[1]) 
+                                    && ts.getLayerName().equals(layerName)))
+                            .map(Matchers::equalTo)
+                            .collect(Collectors.toSet())));
+        
         // verify the quota for tset2 got erased and that now the total is equal to tset1
         tset1Quota = store.getUsedQuotaByTileSetId(tset1.getId());
         tset2Quota = store.getUsedQuotaByTileSetId(tset2.getId());
@@ -377,6 +416,7 @@ public abstract class JDBCQuotaStoreTest extends OnlineTestCase {
         globalQuota = store.getGloballyUsedQuota();
         assertEquals(tset1Quota.getBytes(), globalQuota.getBytes());
     }
+
 
     private void addToQuotaStore(TileSet tset) throws InterruptedException {
         Quota quotaDiff = new Quota(5, StorageUnit.MiB);
