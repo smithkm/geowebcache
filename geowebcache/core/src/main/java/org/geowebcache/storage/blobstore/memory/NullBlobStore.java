@@ -143,11 +143,11 @@ public class NullBlobStore implements BlobStore {
         }
     }
     
-	@Override
-	public boolean layerExists(String layerName) {
-		return false;
-	}
-
+    @Override
+    public boolean layerExists(String layerName) {
+        return false;
+    }
+    
     @Override
     public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
