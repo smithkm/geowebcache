@@ -258,7 +258,6 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject toCache1 = TileObject.createCompleteTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
         final long size1 = toCache1.getBlobSize();
         
-        TileObject fromCache1_1 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null);
         TileObject fromCache1_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet1", "image/png", null);
         
         if(events) {
@@ -271,9 +270,6 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         
         store.put(toCache1);
         EasyMock.verify(listener);
-        assertThat(store.get(fromCache1_1), is(true));
-        assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
-        assertThat(fromCache1_1, hasProperty("blob",resource(new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)))));
         EasyMock.reset(listener);
         if(events) {
             listener.gridSubsetDeleted(eq("testLayer"), eq("testGridSet1"));EasyMock.expectLastCall();
