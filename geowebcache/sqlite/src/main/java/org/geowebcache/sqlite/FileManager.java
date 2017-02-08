@@ -25,10 +25,12 @@ import org.geowebcache.storage.TileRange;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,6 +126,9 @@ final class FileManager {
      * Builds the complete file path associated to the provided tile.
      */
     File getFile(TileObject tile) {
+        if(tile.getParametersId()==null && tile.getParameters()!=null) {
+            tile.setParametersId(ParametersUtils.getId(tile.getParameters()));
+        }
         return getFile(tile.getParametersId(), tile.getXYZ(),
                 tile.getLayerName(), tile.getGridSetId(), tile.getBlobFormat(), tile.getParameters());
     }
@@ -190,6 +195,19 @@ final class FileManager {
         // we replace the layer and grid set terms
         if (replaceLayerName.first) pathBuilderCopy[replaceLayerName.second] = layerName;
         if (replaceGridSetId.first) pathBuilderCopy[replaceGridSetId.second] = gridSetId;
+        return getFiles(pathBuilderCopy);
+    }
+    
+    /**
+     * Return the files present in the root directory that correspond to a certain layer
+     * and certain grid set.
+     */
+    List<File> getParametersFiles(String layerName, String parametersId) {
+        // init the thread local path builder
+        String[] pathBuilderCopy = getPathBuilderCopy();
+        // we replace the layer and grid set terms
+        if (replaceLayerName.first) pathBuilderCopy[replaceLayerName.second] = layerName;
+        if (replaceParametersId.first) pathBuilderCopy[replaceParametersId.second] = parametersId;
         return getFiles(pathBuilderCopy);
     }
 
@@ -299,6 +317,9 @@ final class FileManager {
             // if need the current path will be interpreted as a regex (.*?)
             return pathPart.equals(name) || name.matches(pathPart);
         });
+        if(Objects.isNull(files)) {
+            return Collections.emptyList();
+        }
         if (level != pathParts.length - 1) {
             // let's walk recursively in the matched files
             List<File> matchedFiles = new ArrayList<>();

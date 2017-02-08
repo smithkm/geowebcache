@@ -21,7 +21,7 @@ public class MbtilesBlobStoreConformanceTest extends AbstractBlobStoreTest<Mbtil
         MbtilesConfiguration configuration = new MbtilesConfiguration();
         configuration.setPoolSize(1000);
         configuration.setRootDirectory(temp.getRoot().getPath());
-        configuration.setTemplatePath(Utils.buildPath("{grid}", "{layer}", "{format}", "{z}", "tiles-{x}-{y}.sqlite"));
+        configuration.setTemplatePath(Utils.buildPath("{grid}", "{layer}", "{params}", "{format}", "{z}", "tiles-{x}-{y}.sqlite"));
         configuration.setRowRangeCount(500);
         configuration.setColumnRangeCount(500);
         return configuration;

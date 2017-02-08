@@ -25,6 +25,7 @@ import org.geotools.mbtiles.MBTilesMetadata;
 import org.geotools.mbtiles.MBTilesMetadata.t_format;
 import org.geotools.mbtiles.MBTilesTile;
 import org.geotools.sql.SqlUtil;
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.mime.ApplicationMime;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
@@ -41,8 +42,11 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
@@ -167,6 +171,8 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
                 throw Utils.exception(exception, "Error saving tile '%s' in file '%s'.", tile, file);
             }
         });
+        
+        persistParameterMap(tile);
     }
 
     
@@ -343,6 +349,13 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
     public boolean deleteByGridsetId(String layerName, String gridSetId) throws StorageException {
         boolean deleted = deleteFiles(fileManager.getFiles(layerName, gridSetId));
         listeners.sendGridSubsetDeleted(layerName, gridSetId);
+        return deleted;
+    }
+    
+    @Override
+    public boolean deleteByParametersId(String layerName, String parametersId) throws StorageException {
+        boolean deleted = deleteFiles(fileManager.getParametersFiles(layerName, parametersId));
+        listeners.sendParametersDeleted(layerName, parametersId);
         return deleted;
     }
 
@@ -646,15 +659,38 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
     }
 
     @Override
-    public boolean deleteByParametersId(String layerName, String parametersId)
-            throws StorageException {
-        // TODO Auto-generated method stub
-        return false;
+    public Set<Map<String, String>> getParameters(String layerName) {
+        try {
+            return connectionManager.executeQuery(metadataFile, resultSet -> {
+                        try {
+                            Set<Map<String, String>> result = new HashSet<>();
+                            while(resultSet.next()) {
+                                result.add(ParametersUtils.getMap(resultSet.getString(1)));
+                            }
+                            return result;
+                        } catch (Exception exception) {
+                            throw Utils.exception(exception, "Error reading result set.");
+                        }
+                    },
+                    "SELECT value FROM metadata WHERE layerName = ? AND key like 'parameters.%';", layerName);
+        } catch (Exception exception) {
+            // probably because the metadata table doesn't exists
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error(String.format("Error getting metadata from file '%s'.", metadataFile), exception);
+            }
+            return Collections.emptySet();
+        }
+    }
+    
+    protected void persistParameterMap(TileObject stObj) {
+        // TODO This will probably impact performance negatively.  Need to check and if so do 
+        // in memory caching on top to reduce IO.
+        if(Objects.nonNull(stObj.getParametersId())) {
+            putLayerMetadata(
+                    stObj.getLayerName(), 
+                    "parameters."+stObj.getParametersId(), 
+                    ParametersUtils.getKvp(stObj.getParameters()));
+        }
     }
 
-    @Override
-    public Set<Map<String, String>> getParameters(String layerName) {
-        // TODO Auto-generated method stub
-        return null;
-    }
 }
