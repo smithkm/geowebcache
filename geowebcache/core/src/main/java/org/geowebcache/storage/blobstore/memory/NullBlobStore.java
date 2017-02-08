@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -156,7 +157,6 @@ public class NullBlobStore implements BlobStore {
 
     @Override
     public Set<Map<String, String>> getParameters(String layerName) {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.emptySet();
     }
 }

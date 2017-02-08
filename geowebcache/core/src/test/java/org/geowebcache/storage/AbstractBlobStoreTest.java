@@ -442,6 +442,11 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     }
     
     @Test
+    public void testEmptyParameterListIsNotNull() throws Exception {
+        assertThat(store.getParameters("testLayer"), empty());
+    }
+    
+    @Test
     public void testDeleteByParametersId() throws Exception {
         Map<String, String> params1 = Collections.singletonMap("testKey", "testValue1");
         String paramID1 = ParametersUtils.getId(params1);
