@@ -755,7 +755,15 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
 
     @Override
     public Set<Map<String, String>> getParameters(String layerName) {
-        // TODO Auto-generated method stub
-        return null;
+        componentsStateLock.lock();
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Getting parameters for Layer: " + layerName);
+            }
+            // Get the Layer metadata
+            return store.getParameters(layerName);
+        } finally {
+            componentsStateLock.unlock();
+        }
     }
 }
