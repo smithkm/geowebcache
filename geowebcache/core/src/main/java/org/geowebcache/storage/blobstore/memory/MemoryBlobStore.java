@@ -696,6 +696,17 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
                 return store.deleteByGridsetId((String) objs[0], (String) objs[1]);
             }
         },
+        DELETE_PARAMS_ID {
+            @Override
+            public boolean executeOperation(BlobStore store, Object... objs)
+                    throws StorageException {
+                if (objs == null || objs.length < 2 || !(objs[0] instanceof String)
+                        || !(objs[1] instanceof String)) {
+                    return false;
+                }
+                return store.deleteByParametersId((String) objs[0], (String) objs[1]);
+            }
+        },
         DELETE_LAYER {
             @Override
             public boolean executeOperation(BlobStore store, Object... objs)
@@ -749,8 +760,23 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
     @Override
     public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
-        // TODO Auto-generated method stub
-        return false;
+        componentsStateLock.lock();
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removing Layer: " + layerName);
+            }
+            // Remove the layer from the cacheProvider
+            cacheProvider.removeLayer(layerName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Scheduling Parameters: " + parametersId + " removal for Layer: " + layerName);
+            }
+            // Remove selected parameters
+            executorService.submit(new BlobStoreTask(store, BlobStoreAction.DELETE_PARAMS_ID,
+                    layerName, parametersId));
+            return true;
+        } finally {
+            componentsStateLock.unlock();
+        }
     }
 
     @Override
@@ -760,7 +786,6 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Getting parameters for Layer: " + layerName);
             }
-            // Get the Layer metadata
             return store.getParameters(layerName);
         } finally {
             componentsStateLock.unlock();
