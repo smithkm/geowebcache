@@ -463,7 +463,6 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache2_1 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
         TileObject fromCache1_2 = TileObject.createQueryTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params1);
         TileObject fromCache2_2 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
-        TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
         
         if(events) {
             listener.tileStored(eq("testLayer"), eq("testGridSet"), eq("image/png"), eq(paramID1), eq(0L), eq(0L), eq(0), 
@@ -495,6 +494,21 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.verify(listener);
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
+    }
+    @Test
+    public void testDeleteByParametersIdDoesNotDeleteOthers() throws Exception {
+        Map<String, String> params1 = Collections.singletonMap("testKey", "testValue1");
+        String paramID1 = ParametersUtils.getId(params1);
+        Map<String, String> params2 = Collections.singletonMap("testKey", "testValue2");
+        TileObject toCache1 = TileObject.createCompleteTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params1, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
+        TileObject toCache2 = TileObject.createCompleteTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2, new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)));
+        final long size2 = toCache2.getBlobSize();
+        
+        TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2);
+        
+        store.put(toCache1);
+        store.put(toCache2);
+        store.deleteByParametersId("testLayer", paramID1);
         assertThat(store.get(fromCache2_3), is(true));
         assertThat(fromCache2_3, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_3, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));

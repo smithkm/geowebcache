@@ -66,5 +66,9 @@ public class NullBlobStoreComformanceTest extends AbstractBlobStoreTest<NullBlob
         super.testParameterList();
     }
     
-    
+    @Override
+    @Ignore @Test
+    public void testDeleteByParametersIdDoesNotDeleteOthers() throws Exception {
+        super.testDeleteByParametersIdDoesNotDeleteOthers();
+    }
 }
