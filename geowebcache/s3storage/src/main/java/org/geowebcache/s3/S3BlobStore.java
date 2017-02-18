@@ -17,12 +17,9 @@
 package org.geowebcache.s3;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.geowebcache.storage.blobstore.file.FilePathUtils.filteredLayerName;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
@@ -32,14 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
-import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.layer.TileLayerDispatcher;
@@ -53,7 +48,6 @@ import org.geowebcache.storage.StorageException;
 import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
 import org.geowebcache.storage.TileRangeIterator;
-import org.geowebcache.storage.blobstore.file.FileBlobStore;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -414,43 +408,17 @@ public class S3BlobStore implements BlobStore {
         boolean layerExists = s3Ops.prefixExists(coordsPrefix);
         return layerExists;
     }
-    
+
     @Override
     public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
-
-        checkNotNull(layerName, "layerName");
-        checkNotNull(parametersId, "parametersId");
-
-        final String prefix = keyBuilder.forLayer(layerName);
-
-        boolean prefixExists;
-        try {
-            prefixExists = s3Ops.scheduleAsyncDelete(prefix);
-        } catch (GeoWebCacheException e) {
-            throw Throwables.propagate(e);
-        }
-        if (prefixExists) {
-            listeners.sendParametersDeleted(layerName, parametersId);
-        }
-        return prefixExists;
+        // TODO Auto-generated method stub
+        return false;
     }
-    
-    public boolean isParameterIdCached(String parameterId) {
-        // TODO
-        return true;
-    }
-    
+
     @Override
     public Set<Map<String, String>> getParameters(String layerName) {
-        Properties p = getLayerMetadata(layerName);
-        final int prefixLength = "parameters.".length();
-        return p.stringPropertyNames().parallelStream()
-            .filter(key->key.startsWith("parameters."))
-            .filter(key->isParameterIdCached(key.substring(prefixLength)))
-            .map(p::getProperty)
-            //.map(FileBlobStore::urlDecUtf8)
-            .map(ParametersUtils::getMap)
-            .collect(Collectors.toSet());
+        // TODO Auto-generated method stub
+        return null;
     }
 }

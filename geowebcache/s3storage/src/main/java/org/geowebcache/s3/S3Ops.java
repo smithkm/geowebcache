@@ -25,18 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -52,13 +46,13 @@ import com.amazonaws.services.s3.iterable.S3Objects;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
@@ -156,11 +150,8 @@ class S3Ops {
             lock.release();
         }
     }
-    
+
     public boolean scheduleAsyncDelete(final String prefix) throws GeoWebCacheException {
-        return scheduleAsyncDelete(prefix, (x)->true);
-    }
-    public boolean scheduleAsyncDelete(final String prefix, final Predicate<?> filter) throws GeoWebCacheException {
         final long timestamp = currentTimeSeconds();
         String msg = String.format("Issuing bulk delete on '%s/%s' for objects older than %d",
                 bucketName, prefix, timestamp);
@@ -168,7 +159,7 @@ class S3Ops {
 
         Lock lock = locks.getLock(prefix);
         try {
-            boolean taskRuns = asyncDelete(prefix, timestamp/*, filter*/);
+            boolean taskRuns = asyncDelete(prefix, timestamp);
             if (taskRuns) {
                 final String pendingDeletesKey = keyBuilder.pendingDeletes();
                 Properties deletes = getProperties(pendingDeletesKey);
@@ -286,22 +277,6 @@ class S3Ops {
 
     }
 
-    public boolean cacheExists(String prefix, Optional<Predicate<S3ObjectSummary>> filter) {
-        if(filter.isPresent()) {
-            ListObjectsRequest req = new ListObjectsRequest();
-            req.setBucketName(bucketName);
-            req.setPrefix(prefix);
-            req.setDelimiter("/");
-            req.setMaxKeys(1000); //TODO what should this be?  Maybe configurable?
-            
-            return conn.listObjects(req).getObjectSummaries().parallelStream()
-                .anyMatch(filter.get());
-            
-        } else {
-            return prefixExists(prefix);
-        }
-    }
-    
     /**
      * Simply checks if there are objects starting with {@code prefix}
      */
@@ -367,10 +342,6 @@ class S3Ops {
             this.timestamp = timestamp;
         }
 
-        Stream<S3ObjectSummary> objectStream(final String prefix) {
-            return StreamSupport.stream(S3Objects.withPrefix(conn, bucketName, prefix).spliterator(), false);
-        }
-        
         @Override
         public Long call() throws Exception {
             long count = 0L;
@@ -378,13 +349,11 @@ class S3Ops {
                 checkInterrupted();
                 S3BlobStore.log.info(String.format("Running bulk delete on '%s/%s':%d", bucketName,
                         prefix, timestamp));
-                
                 Iterable<S3ObjectSummary> objects = S3Objects.withPrefix(conn, bucketName, prefix);
                 Predicate<S3ObjectSummary> filter = new TimeStampFilter(timestamp);
-                AtomicInteger n = new AtomicInteger(0);
-                Iterable<List<S3ObjectSummary>> partitions = StreamSupport.stream(objects.spliterator(), false)
-                        .filter(filter)
-                        .collect(Collectors.groupingBy((x)->(n.getAndIncrement()%1000))).values();
+                objects = Iterables.filter(objects, filter);
+
+                Iterable<List<S3ObjectSummary>> partitions = Iterables.partition(objects, 1000);
 
                 for (List<S3ObjectSummary> partition : partitions) {
 
@@ -449,7 +418,7 @@ class S3Ops {
         }
 
         @Override
-        public boolean test(S3ObjectSummary summary) {
+        public boolean apply(S3ObjectSummary summary) {
             long lastModified = summary.getLastModified().getTime();
             boolean applies = timeStamp >= lastModified;
             return applies;

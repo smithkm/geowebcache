@@ -17,7 +17,6 @@ import static org.junit.Assert.assertThat;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 
 import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.io.ByteArrayResource;
@@ -49,10 +48,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
      */
     @After
     public void destroyTestUnit() throws Exception {
-        // Might be null if an Assumption failed during createTestUnit
-        if(Objects.nonNull(store)) {
-            store.destroy();
-        }
+        store.destroy();
     }
     
     @Test
