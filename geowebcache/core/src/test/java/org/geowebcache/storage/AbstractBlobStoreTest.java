@@ -17,6 +17,7 @@ import static org.junit.Assert.assertThat;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.io.ByteArrayResource;
@@ -48,7 +49,10 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
      */
     @After
     public void destroyTestUnit() throws Exception {
-        store.destroy();
+        // Might be null if an Assumption failed during createTestUnit
+        if(Objects.nonNull(store)) {
+            store.destroy();
+        }
     }
     
     @Test
@@ -275,7 +279,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
             listener.gridSubsetDeleted(eq("testLayer"), eq("testGridSet1"));EasyMock.expectLastCall();
         }
         EasyMock.replay(listener);
-        store.deleteByGridsetId("testLayer", "testGridSet1");
+        assertThat(store.deleteByGridsetId("testLayer", "testGridSet1"), is(true));
         EasyMock.verify(listener);
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
