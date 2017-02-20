@@ -79,6 +79,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache);
+        asyncWaitWrite();
         
         EasyMock.verify(listener);
         
@@ -109,10 +110,12 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache1);
+        asyncWaitWrite();
         assertThat(store.get(fromCache2_1), is(false));
         assertThat(fromCache2_1, hasProperty("blobSize", is(0)));
         
         store.put(toCache2);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         
         assertThat(store.get(fromCache1), is(true));
@@ -141,6 +144,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         long storedSize = 0;
         if(events) {
@@ -154,6 +158,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         }
         EasyMock.replay(listener);
         store.delete(remove);
+        asyncWaitDelete();
         EasyMock.verify(listener);
         assertThat(store.get(fromCache), is(false));
         assertThat(fromCache, hasProperty("blobSize", is(0)));
@@ -177,6 +182,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache1);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         long storedSize = 0;
         if(events){
@@ -191,6 +197,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         }
         EasyMock.replay(listener);
         store.put(toCache2);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         assertThat(store.get(fromCache), is(true));
         assertThat(fromCache, hasProperty("blobSize", is((int)size2)));
@@ -226,8 +233,10 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache1);
+        asyncWaitWrite();
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         long storedSize1 = 0;
         if(events) {
@@ -247,6 +256,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         }
         EasyMock.replay(listener);
         store.delete(remove);
+        asyncWaitDelete();
         EasyMock.verify(listener);
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
@@ -273,6 +283,8 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache1);
+        asyncWaitWrite();
+        
         EasyMock.verify(listener);
         EasyMock.reset(listener);
         if(events) {
@@ -299,8 +311,11 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         TileObject fromCache2_3 = TileObject.createQueryTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet2", "image/png", null);
         
         store.put(toCache1);
+        asyncWaitWrite();
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
+        asyncWaitWrite();
+        
         assertThat(store.get(fromCache1_1), is(true));
         assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
         assertThat(fromCache1_1, hasProperty("blob",resource(new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)))));
@@ -308,6 +323,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(fromCache2_2, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_2, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
         store.deleteByGridsetId("testLayer", "testGridSet1");
+        asyncWaitDelete();
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
         assertThat(store.get(fromCache2_3), is(true));
@@ -348,8 +364,10 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache1);
+        asyncWaitWrite();
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         long storedSize1 = 0;
         if(events) {
@@ -374,6 +392,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         }
         EasyMock.replay(listener);
         store.delete(remove);
+        asyncWaitDelete();
         EasyMock.verify(listener);
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
@@ -386,6 +405,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadata() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
         store.putLayerMetadata("testLayer", "testKey", "testValue");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("testValue"));
     }
     
@@ -393,6 +413,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadataWithEqualsInKey() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "test=Key"), nullValue());
         store.putLayerMetadata("testLayer", "test=Key", "testValue");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "test=Key"), equalTo("testValue"));
     }
     
@@ -400,6 +421,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadataWithEqualsInValue() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
         store.putLayerMetadata("testLayer", "testKey", "test=Value");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("test=Value"));
     }
     
@@ -407,6 +429,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadataWithAmpInKey() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "test&Key"), nullValue());
         store.putLayerMetadata("testLayer", "test&Key", "testValue");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "test&Key"), equalTo("testValue"));
     }
     
@@ -414,6 +437,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadataWithAmpInValue() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
         store.putLayerMetadata("testLayer", "testKey", "test&Value");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("test&Value"));
     }
     
@@ -421,6 +445,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadataWithPercentInKey() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "test%Key"), nullValue());
         store.putLayerMetadata("testLayer", "test%Key", "testValue");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "test%Key"), equalTo("testValue"));
     }
     
@@ -428,6 +453,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     public void testMetadataWithPercentInValue() throws Exception {
         assertThat(store.getLayerMetadata("testLayer", "testKey"), nullValue());
         store.putLayerMetadata("testLayer", "testKey", "test%Value");
+        asyncWaitWrite();
         assertThat(store.getLayerMetadata("testLayer", "testKey"), equalTo("test%Value"));
     }
     
@@ -440,8 +466,10 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         
         assertThat(store.getParameters("testLayer"), empty());
         store.put(toCache1);
+        asyncWaitWrite();
         assertThat(store.getParameters("testLayer"), containsInAnyOrder(params1));
         store.put(toCache2);
+        asyncWaitWrite();
         assertThat(store.getParameters("testLayer"), containsInAnyOrder(params1, params2));
     }
     
@@ -480,8 +508,10 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         EasyMock.replay(listener);
         
         store.put(toCache1);
+        asyncWaitWrite();
         assertThat(store.get(fromCache2_1), is(false));
         store.put(toCache2);
+        asyncWaitWrite();
         EasyMock.verify(listener);
         assertThat(store.get(fromCache1_1), is(true));
         assertThat(fromCache1_1, hasProperty("blobSize", is((int)size1)));
@@ -495,6 +525,7 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         }
         EasyMock.replay(listener);
         store.deleteByParametersId("testLayer", paramID1);
+        asyncWaitDelete();
         EasyMock.verify(listener);
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
@@ -512,9 +543,26 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         
         store.put(toCache1);
         store.put(toCache2);
+        asyncWaitWrite();
         store.deleteByParametersId("testLayer", paramID1);
+        asyncWaitDelete();
         assertThat(store.get(fromCache2_3), is(true));
         assertThat(fromCache2_3, hasProperty("blobSize", is((int)size2)));
         assertThat(fromCache2_3, hasProperty("blob",resource(new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)))));
+    }
+    
+    /**
+     * Give the store time to do asynchronous operations.  Subclasses should override this with an appropriate delay.
+     * @throws Exception
+     */
+    protected void asyncWaitWrite() throws Exception  {
+        // Do Nothing
+    }
+    /**
+     * Give the store time to do asynchronous operations.  Subclasses should override this with an appropriate delay.
+     * @throws Exception
+     */
+    protected void asyncWaitDelete() throws Exception  {
+        // Do Nothing
     }
 }

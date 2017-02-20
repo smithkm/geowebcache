@@ -7,6 +7,7 @@ import static org.easymock.classextension.EasyMock.createNiceMock;
 import static org.easymock.classextension.EasyMock.replay;
 import static org.junit.Assert.fail;
 
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.geowebcache.GeoWebCacheException;
@@ -18,6 +19,7 @@ import org.geowebcache.storage.AbstractBlobStoreTest;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Rule;
+import org.junit.Test;
 
 import org.easymock.classextension.EasyMock;
 
@@ -50,4 +52,9 @@ public class S3BlobStoreConformanceTest extends AbstractBlobStoreTest<S3BlobStor
         store = new S3BlobStore(config, layers, lockProvider);
     }
 
+    @Override
+    protected void asyncWaitDelete() throws Exception {
+        super.asyncWaitDelete();
+        Thread.sleep(5000);
+    }
 }

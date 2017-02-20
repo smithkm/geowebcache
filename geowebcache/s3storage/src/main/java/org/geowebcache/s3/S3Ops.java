@@ -256,7 +256,7 @@ class S3Ops {
             String parentKey = e.getKey();
             if (key.startsWith(parentKey)) {
                 long deleteTime = e.getValue().longValue();
-                return deleteTime > lastModified;
+                return deleteTime >= lastModified;
             }
         }
         return false;
