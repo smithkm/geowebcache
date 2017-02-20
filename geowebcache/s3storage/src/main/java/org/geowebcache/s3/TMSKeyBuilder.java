@@ -55,16 +55,8 @@ final class TMSKeyBuilder {
     private static final String GRIDSET_PREFIX_FORMAT = "%s/%s/%s/";
 
     public static final String LAYER_METADATA_OBJECT_NAME = "metadata.properties";
-    public static final String PARAMETERS_METADATA_OBJECT_PREFIX = "parameters-";
-    public static final String PARAMETERS_METADATA_OBJECT_NAME = 
-            PARAMETERS_METADATA_OBJECT_PREFIX+"%s.properties";
 
-    private static final String LAYER_METADATA_FORMAT = "%s/%s/" + 
-            LAYER_METADATA_OBJECT_NAME;
-    private static final String PARAMETERS_METADATA_FORMAT = "%s/%s/" + 
-            PARAMETERS_METADATA_OBJECT_NAME;
-    private static final String PARAMETERS_METADATA_PREFIX_FORMAT = 
-            "%s/%s/" + PARAMETERS_METADATA_OBJECT_PREFIX;
+    private static final String LAYER_METADATA_FORMAT = "%s/%s/" + LAYER_METADATA_OBJECT_NAME;
 
     private String prefix;
 
@@ -135,14 +127,6 @@ final class TMSKeyBuilder {
     public String layerMetadata(final String layerName) {
         String layerId = layerId(layerName);
         return String.format(LAYER_METADATA_FORMAT, prefix, layerId);
-    }
-    public String parametersMetadata(final String layerName, final String parametersId) {
-        String layerId = layerId(layerName);
-        return String.format(PARAMETERS_METADATA_FORMAT, prefix, layerId, parametersId);
-    }
-    public String parametersMetadataPrefix(final String layerName) {
-        String layerId = layerId(layerName);
-        return String.format(PARAMETERS_METADATA_PREFIX_FORMAT, prefix, layerId);
     }
 
     /**

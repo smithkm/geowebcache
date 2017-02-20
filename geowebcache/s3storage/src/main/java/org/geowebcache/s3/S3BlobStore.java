@@ -17,7 +17,6 @@
 package org.geowebcache.s3;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Objects.isNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -67,7 +66,6 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -174,9 +172,7 @@ public class S3BlobStore implements BlobStore {
 
         log.trace(log.isTraceEnabled() ? ("Storing " + key) : "");
         s3Ops.putObject(putObjectRequest);
-        
-        putParametersMetadata(obj.getLayerName(), obj.getParametersId(), obj.getParameters());
-        
+
         /*
          * This is important because listeners may be tracking tile existence
          */
@@ -403,26 +399,6 @@ public class S3BlobStore implements BlobStore {
 
     private Properties getLayerMetadata(String layerName) {
         String key = keyBuilder.layerMetadata(layerName);
-        return s3Ops.getProperties(key);
-    }
-    
-    private void putParametersMetadata(String layerName, String parametersId, Map<String, String> parameters) {
-        assert(isNull(parametersId)==isNull(parameters));
-        if(isNull(parametersId)) {
-            return;
-        }
-        Properties properties = new Properties();
-        parameters.forEach(properties::setProperty);
-        String resourceKey = keyBuilder.parametersMetadata(layerName, parametersId);
-        try {
-            s3Ops.putProperties(resourceKey, properties);
-        } catch (StorageException e) {
-            Throwables.propagate(e);
-        }
-    }
-
-    private Properties getParametersMetadata(String layerName, String parametersId) {
-        String key = keyBuilder.parametersMetadata(layerName, parametersId);
         return s3Ops.getProperties(key);
     }
 
