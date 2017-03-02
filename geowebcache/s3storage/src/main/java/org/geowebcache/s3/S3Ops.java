@@ -56,6 +56,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.google.common.base.Throwables;
@@ -326,6 +327,10 @@ class S3Ops {
         PutObjectRequest putReq = new PutObjectRequest(bucketName, resourceKey, in, objectMetadata);
         putObject(putReq);
     }
+    
+    public Stream<S3ObjectSummary> objectStream(String prefix) {
+        return StreamSupport.stream(S3Objects.withPrefix(conn, bucketName, prefix).spliterator(), false);
+    }
 
     private class BulkDelete implements Callable<Long> {
 
@@ -352,10 +357,9 @@ class S3Ops {
                 checkInterrupted();
                 S3BlobStore.log.info(String.format("Running bulk delete on '%s/%s':%d", bucketName,
                         prefix, timestamp));
-                Iterable<S3ObjectSummary> objects = S3Objects.withPrefix(conn, bucketName, prefix);
                 Predicate<S3ObjectSummary> filter = new TimeStampFilter(timestamp);
                 AtomicInteger n = new AtomicInteger(0); 
-                Iterable<List<S3ObjectSummary>> partitions = StreamSupport.stream(objects.spliterator(), true)
+                Iterable<List<S3ObjectSummary>> partitions = objectStream(prefix)
                         .filter(filter)
                         .collect(Collectors.groupingBy((x)->n.getAndIncrement()%1000))
                         .values();

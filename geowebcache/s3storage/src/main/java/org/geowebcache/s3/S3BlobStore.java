@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -66,6 +67,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
@@ -432,17 +434,34 @@ public class S3BlobStore implements BlobStore {
         boolean layerExists = s3Ops.prefixExists(coordsPrefix);
         return layerExists;
     }
-
     @Override
     public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
-        // TODO Auto-generated method stub
-        return false;
+        checkNotNull(layerName, "layerName");
+        checkNotNull(parametersId, "parametersId");
+        
+        boolean prefixExists = keyBuilder.forParameters(layerName, parametersId).stream()
+            .map(prefix->{
+                try {
+                    return s3Ops.scheduleAsyncDelete(prefix);
+                } catch (RuntimeException|GeoWebCacheException e) {
+                    throw Throwables.propagate(e);
+                }
+            })
+            .reduce(Boolean::logicalOr) // Don't use Stream.anyMatch as it would short circuit
+            .orElse(false);
+        if (prefixExists) {
+            listeners.sendParametersDeleted(layerName, parametersId);
+        }
+        return prefixExists;
     }
 
     @Override
     public Set<Map<String, String>> getParameters(String layerName) {
-        // TODO Auto-generated method stub
-        return null;
+        return s3Ops.objectStream(keyBuilder.parametersMetadataPrefix(layerName))
+            .map(S3ObjectSummary::getKey)
+            .map(s3Ops::getProperties)
+            .map(Map.class::cast)
+            .collect(Collectors.toSet());
     }
 }

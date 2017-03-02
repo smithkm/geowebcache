@@ -19,6 +19,8 @@ package org.geowebcache.s3;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.filter.parameters.ParametersUtils;
@@ -84,6 +86,26 @@ final class TMSKeyBuilder {
         }
         return layer.getId();
     }
+    public Set<String> layerGridsets(String layerName) {
+        TileLayer layer;
+        try {
+            layer = layers.getTileLayer(layerName);
+        } catch (GeoWebCacheException e) {
+            throw Throwables.propagate(e);
+        }
+        return layer.getGridSubsets();
+    }
+    public Set<String> layerFormats(String layerName) {
+        TileLayer layer;
+        try {
+            layer = layers.getTileLayer(layerName);
+        } catch (GeoWebCacheException e) {
+            throw Throwables.propagate(e);
+        }
+        return layer.getMimeTypes().stream()
+            .map(MimeType::getFileExtension)
+            .collect(Collectors.toSet());
+    }
 
     public String forTile(TileObject obj) {
         checkNotNull(obj.getLayerName());
@@ -130,6 +152,16 @@ final class TMSKeyBuilder {
     public String forGridset(final String layerName, final String gridsetId) {
         String layerId = layerId(layerName);
         return String.format(GRIDSET_PREFIX_FORMAT, prefix, layerId, gridsetId);
+    }
+    
+    public Set<String> forParameters(final String layerName, final String parametersId) {
+        String layerId = layerId(layerName);
+        return layerGridsets(layerName).stream()
+            .flatMap(gridsetId -> layerFormats(layerName).stream()
+                .map(format -> 
+                    String.format(COORDINATES_PREFIX_FORMAT, prefix, 
+                            layerId, gridsetId, format, parametersId)))
+            .collect(Collectors.toSet());
     }
 
     public String layerMetadata(final String layerName) {
