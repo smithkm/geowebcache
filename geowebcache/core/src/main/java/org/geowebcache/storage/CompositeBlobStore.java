@@ -387,8 +387,7 @@ public class CompositeBlobStore implements BlobStore {
     @Override
     public boolean deleteByParametersId(String layerName, String parametersId)
             throws StorageException {
-        // TODO Auto-generated method stub
-        return false;
+        return readFunctionUnsafe(()->store(layerName).deleteByParametersId(layerName, parametersId));
     }
     
     @Override
