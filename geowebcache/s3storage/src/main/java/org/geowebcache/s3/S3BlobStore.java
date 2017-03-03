@@ -456,12 +456,13 @@ public class S3BlobStore implements BlobStore {
         return prefixExists;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Set<Map<String, String>> getParameters(String layerName) {
         return s3Ops.objectStream(keyBuilder.parametersMetadataPrefix(layerName))
             .map(S3ObjectSummary::getKey)
             .map(s3Ops::getProperties)
-            .map(Map.class::cast)
+            .map(props->(Map<String,String>)(Map<?,?>)props)
             .collect(Collectors.toSet());
     }
 }
