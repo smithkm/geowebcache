@@ -23,14 +23,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
+import org.geowebcache.diskquota.CacheCleaner;
 import org.geowebcache.diskquota.storage.PagePyramid.PageLevelInfo;
 import org.geowebcache.grid.GridSubset;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.StorageBroker;
+import org.geowebcache.storage.StorageException;
 import org.geowebcache.storage.TileRange;
 import org.springframework.util.Assert;
 
@@ -38,7 +44,9 @@ import org.springframework.util.Assert;
  * Supports the organization of tiles into groups (tile pages) for disk quota accounting purposes
  */
 public class TilePageCalculator {
-
+    
+    private static final Log log = LogFactory.getLog(TilePageCalculator.class);
+    
     private TileLayerDispatcher tld;
     
     private StorageBroker sb;
@@ -143,7 +151,14 @@ public class TilePageCalculator {
                     // Loop over the parameter ids, getting them from the storage broker if they were not provided
                     .flatMap(blobFormat->parameterIds
                             .map(Collection::stream)
-                            .orElse(sb.getCachedParameterIds(layerName).stream())
+                            .orElseGet(()->{
+                                try {
+                                    return sb.getCachedParameterIds(layerName).stream();
+                                } catch (StorageException e) {
+                                    log.error("Error while retreiving cached parameter IDs for layer "+layerName, e);
+                                    return Stream.of();
+                                }
+                            })
                         .map(parametersId->
                             new TileSet(layerName, gridsetId, blobFormat, parametersId))))
             .collect(Collectors.toSet());

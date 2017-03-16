@@ -28,6 +28,26 @@ public interface StorageBroker {
      */
     public abstract boolean deleteByGridSetId(String layerName, String gridSetId)
             throws StorageException;
+    
+    /**
+     * Completely deletes the cache for a layer/parameters combination
+     * 
+     * @param layerName
+     * @param removedGridset
+     * @throws StorageException
+     */
+    public abstract boolean deleteByParametersId(String layerName, String parametersId)
+            throws StorageException;
+    
+    /**
+     * Completely deletes the cache for a layer/parameters combination
+     * 
+     * @param layerName
+     * @param removedGridset
+     * @throws StorageException
+     */
+    public abstract boolean deleteByParameters(String layerName, Map<String,String> parameters)
+            throws StorageException;
 
     public abstract boolean rename(String oldLayerName, String newLayerName)
             throws StorageException;
@@ -63,8 +83,8 @@ public interface StorageBroker {
 
     public abstract void putTransient(TileObject tile);
     
-    public abstract Set<String> getCachedParameterIds(String layerName);
+    public abstract Set<String> getCachedParameterIds(String layerName) throws StorageException;
     
-    public abstract Set<Map<String, String>> getCachedParameters(String layerName);
+    public abstract Set<Map<String, String>> getCachedParameters(String layerName) throws StorageException;
 
 }

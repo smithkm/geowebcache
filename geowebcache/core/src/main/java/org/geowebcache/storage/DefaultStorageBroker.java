@@ -60,6 +60,16 @@ public class DefaultStorageBroker implements StorageBroker {
             throws StorageException {
         return blobStore.deleteByGridsetId(layerName, gridSetId);
     }
+    
+    public boolean deleteByParameters(final String layerName, final Map<String, String> parameters)
+            throws StorageException {
+        return blobStore.deleteByParameters(layerName, parameters);
+    }
+    
+    public boolean deleteByParametersId(final String layerName, String parametersId)
+            throws StorageException {
+        return blobStore.deleteByParametersId(layerName, parametersId);
+    }
 
     public boolean rename(String oldLayerName, String newLayerName) throws StorageException {
         return blobStore.rename(oldLayerName, newLayerName);
@@ -117,12 +127,12 @@ public class DefaultStorageBroker implements StorageBroker {
     }
     
     @Override
-    public Set<String> getCachedParameterIds(String layerName) {
+    public Set<String> getCachedParameterIds(String layerName) throws StorageException {
         return this.blobStore.getParameterIds(layerName);
     }
     
     @Override
-    public Set<Map<String, String>> getCachedParameters(String layerName) {
+    public Set<Map<String, String>> getCachedParameters(String layerName) throws StorageException  {
         return this.blobStore.getParameters(layerName);
     }
 }

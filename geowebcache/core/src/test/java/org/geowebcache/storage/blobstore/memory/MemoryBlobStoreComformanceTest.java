@@ -35,4 +35,10 @@ public class MemoryBlobStoreComformanceTest extends AbstractBlobStoreTest<Memory
     public void testParameterList() throws Exception {
         super.testParameterList();
     }
+    
+    @Override
+    @Ignore @Test // TODO For now, this is a limitation of MemoryBlobStore
+    public void testParameterIDList() throws Exception {
+        super.testParameterIDList();
+    }
 }

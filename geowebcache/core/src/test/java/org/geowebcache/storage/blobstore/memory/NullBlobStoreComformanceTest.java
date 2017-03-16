@@ -59,6 +59,12 @@ public class NullBlobStoreComformanceTest extends AbstractBlobStoreTest<NullBlob
     public void testParameters() throws Exception {
         super.testParameters();
     }
+    
+    @Override
+    @Ignore @Test
+    public void testParameterIDList() throws Exception {
+        super.testParameterIDList();
+    }
 
     @Override
     @Ignore @Test

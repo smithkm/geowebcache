@@ -683,8 +683,6 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
     }
     
     protected void persistParameterMap(TileObject stObj) {
-        // TODO This will probably impact performance negatively.  Need to check and if so do 
-        // in memory caching on top to reduce IO.
         if(Objects.nonNull(stObj.getParametersId())) {
             putLayerMetadata(
                     stObj.getLayerName(), 

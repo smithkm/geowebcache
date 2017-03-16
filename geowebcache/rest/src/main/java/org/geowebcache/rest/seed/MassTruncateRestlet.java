@@ -27,6 +27,7 @@ import org.geowebcache.io.GeoWebCacheXStream;
 import org.geowebcache.rest.RestletException;
 import org.geowebcache.seed.MassTruncateRequest;
 import org.geowebcache.seed.TruncateLayerRequest;
+import org.geowebcache.seed.TruncateParametersRequest;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.StorageException;
 import org.restlet.data.MediaType;
@@ -44,7 +45,10 @@ public class MassTruncateRestlet extends GWCSeedingRestlet {
     private StorageBroker broker;
     private Configuration config;
     
-    static final Class<?>[] DEFAULT_REQUEST_TYPES = {TruncateLayerRequest.class};
+    static final Class<?>[] DEFAULT_REQUEST_TYPES = {
+            TruncateLayerRequest.class, 
+            TruncateParametersRequest.class
+            };
 
     Class<?>[] requestTypes;
     

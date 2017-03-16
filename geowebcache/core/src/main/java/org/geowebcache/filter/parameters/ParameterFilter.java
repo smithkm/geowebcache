@@ -26,6 +26,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 /**
@@ -165,5 +166,14 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
         if(defaultValue==null) defaultValue ="";
         return this;
     }
-
+    
+    /**
+     * Is the given value exactly a value that could be produced by the filter.
+     * @param value
+     * @return
+     * @throws ParameterException
+     */
+    boolean isFilteredValue(String value) throws ParameterException {
+        return Objects.equal(value, this.getDefaultValue()) || Objects.equal(value, this.apply(value));
+    }
 }

@@ -780,7 +780,7 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
     }
 
     @Override
-    public Set<Map<String, String>> getParameters(String layerName) {
+    public Set<Map<String, String>> getParameters(String layerName) throws StorageException {
         componentsStateLock.lock();
         try {
             if (LOG.isDebugEnabled()) {

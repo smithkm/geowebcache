@@ -446,6 +446,22 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
     }
     
     @Test
+    public void testParameterIDList() throws Exception {
+        Map<String, String> params1 = Collections.singletonMap("testKey", "testValue1");
+        Map<String, String> params2 = Collections.singletonMap("testKey", "testValue2");
+        String params1Id = ParametersUtils.getId(params1);
+        String params2Id = ParametersUtils.getId(params2);
+        TileObject toCache1 = TileObject.createCompleteTileObject("testLayer",  new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params1, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
+        TileObject toCache2 = TileObject.createCompleteTileObject("testLayer", new long[]{0L, 0L, 0L}, "testGridSet", "image/png", params2, new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)));
+        
+        assertThat(store.getParameterIds("testLayer"), empty());
+        store.put(toCache1);
+        assertThat(store.getParameterIds("testLayer"), containsInAnyOrder(params1Id));
+        store.put(toCache2);
+        assertThat(store.getParameterIds("testLayer"), containsInAnyOrder(params1Id, params2Id));
+    }
+    
+    @Test
     public void testEmptyParameterListIsNotNull() throws Exception {
         assertThat(store.getParameters("testLayer"), empty());
     }
