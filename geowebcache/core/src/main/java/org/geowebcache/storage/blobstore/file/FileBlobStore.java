@@ -825,6 +825,7 @@ public class FileBlobStore implements BlobStore {
         }
     }
     
+    @Override
     public Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName) {
         Properties p = getLayerMetadata(layerName);
         return getParameterIds(layerName).stream()
@@ -838,14 +839,6 @@ public class FileBlobStore implements BlobStore {
                     kvp=urlDecUtf8(kvp);
                     return Optional.of(ParametersUtils.getMap(kvp));
                 }));
-    }
-    
-    @Override
-    public Set<Map<String, String>> getParameters(String layerName) {
-        return getParametersMapping(layerName).values().stream()
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toSet());
     }
     
     @Override

@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.GeoWebCacheException;
+import org.geowebcache.filter.parameters.ParametersUtils;
 import org.geowebcache.io.ByteArrayResource;
 import org.geowebcache.io.Resource;
 import org.geowebcache.layer.TileLayerDispatcher;
@@ -464,5 +466,14 @@ public class S3BlobStore implements BlobStore {
             .map(s3Ops::getProperties)
             .map(props->(Map<String,String>)(Map<?,?>)props)
             .collect(Collectors.toSet());
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName) {
+        return s3Ops.objectStream(keyBuilder.parametersMetadataPrefix(layerName))
+            .map(S3ObjectSummary::getKey)
+            .map(s3Ops::getProperties)
+            .map(props->(Map<String,String>)(Map<?,?>)props)
+            .collect(Collectors.toMap(ParametersUtils::getId, Optional::of));
     }
 }

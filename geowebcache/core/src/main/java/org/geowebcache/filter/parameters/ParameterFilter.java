@@ -173,7 +173,7 @@ public abstract class ParameterFilter implements Serializable, Cloneable {
      * @return
      * @throws ParameterException
      */
-    boolean isFilteredValue(String value) throws ParameterException {
+    public boolean isFilteredValue(String value) throws ParameterException {
         return Objects.equal(value, this.getDefaultValue()) || Objects.equal(value, this.apply(value));
     }
 }

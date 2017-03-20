@@ -17,12 +17,26 @@
  */
 package org.geowebcache.storage;
 
+import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.geowebcache.filter.parameters.ParameterException;
+import org.geowebcache.filter.parameters.ParameterFilter;
 import org.geowebcache.filter.parameters.ParametersUtils;
+import org.geowebcache.grid.GridSubset;
+import org.geowebcache.layer.TileLayer;
+import org.geowebcache.mime.MimeType;
 
 /**
  * Manages the persistence of the actual data contained in cacheable objects (tiles, WFS responses).
@@ -32,7 +46,8 @@ import org.geowebcache.filter.parameters.ParametersUtils;
  * </p>
  */
 public interface BlobStore {
-	
+    static Log log = LogFactory.getLog(BlobStore.class);
+
     /**
      * Delete the cache for the named layer
      * 
@@ -145,7 +160,12 @@ public interface BlobStore {
      * @param layerName
      * @return
      */
-    public Set<Map<String, String>> getParameters(String layerName) throws StorageException;
+    public default Set<Map<String, String>> getParameters(String layerName) throws StorageException {
+        return getParametersMapping(layerName).values().stream()
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toSet());
+    }
     
     /**
      * Get the IDs of the cached parameter maps for a layer. 
@@ -157,9 +177,7 @@ public interface BlobStore {
      * @return
      */
     public default Set<String> getParameterIds(String layerName) throws StorageException {
-        return getParameters(layerName).stream()
-                .map(ParametersUtils::getId)
-                .collect(Collectors.toSet());
+        return getParametersMapping(layerName).keySet();
     }
     
     
@@ -189,6 +207,50 @@ public interface BlobStore {
 	 */
 	public boolean layerExists(String layerName);
 
+    Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName);
+    
+    /**
+     * If the given layer is cached, remove 
+     * @param layer
+     * @throws StorageException
+     */
+    public default void purgeOrphans(TileLayer layer) throws StorageException {
+        // TODO maybe do purging based on gridset and format
+        try{
+            getParametersMapping(layer.getName()).entrySet().stream()
+                .forEach(entry -> {
+                    boolean skookum = true;
+                    if(entry.getValue().isPresent()){
+                        final Map<String, String> params=entry.getValue().get();
+                        final List<ParameterFilter> parameterFilters = layer.getParameterFilters();
+                        skookum = skookum && params.size() == parameterFilters.size(); 
+                        skookum = skookum && params.entrySet().stream()
+                            .allMatch(e->parameterFilters.stream().anyMatch(filter->{
+                                try {
+                                    return filter.isFilteredValue(e.getValue());
+                                } catch (ParameterException ex) {
+                                    log.error("Could not check validity of parameter", ex);
+                                    return true;
+                                }
+                            }));
+                    } else {
+                        skookum = false;
+                    }
+                    if(!skookum) {
+                        try {
+                            this.deleteByParametersId(layer.getName(), entry.getKey());
+                        } catch (StorageException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+                });
+        } catch (UncheckedIOException ex) {
+            if(ex.getCause() instanceof StorageException) {
+                throw (StorageException) ex.getCause();
+            }
+        }
+    }
+    
     // /**
     // * Test to see whether the blobstore is ready or not
     // */

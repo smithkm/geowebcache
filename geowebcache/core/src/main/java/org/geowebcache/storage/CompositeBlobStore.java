@@ -19,6 +19,7 @@ package org.geowebcache.storage;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -370,7 +371,7 @@ public class CompositeBlobStore implements BlobStore {
                 config.setEnabled(true);
                 config.setDefault(true);
                 config.setBaseDirectory(defaultStorageFinder.getDefaultPath());
-                FileBlobStore store;
+                BlobStore store;
                 store = new FileBlobStore(config.getBaseDirectory());
 
                 stores.put(CompositeBlobStore.DEFAULT_STORE_DEFAULT_ID,
@@ -433,5 +434,9 @@ public class CompositeBlobStore implements BlobStore {
     
     protected void readAction(StorageAction function) {
         readFunction((StorageAccessor<Void>)()->{function.run();return null;});
+    }
+
+    public Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName) {
+        return readFunction(()->store(layerName).getParametersMapping(layerName));
     }
 }

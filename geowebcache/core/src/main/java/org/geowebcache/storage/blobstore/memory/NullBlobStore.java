@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
@@ -157,5 +158,9 @@ public class NullBlobStore implements BlobStore {
     @Override
     public Set<Map<String, String>> getParameters(String layerName) {
         return Collections.emptySet();
+    }
+
+    public Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName) {
+        return Collections.emptyMap();
     }
 }

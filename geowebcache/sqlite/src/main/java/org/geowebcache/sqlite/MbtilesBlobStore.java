@@ -43,10 +43,12 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
@@ -657,15 +659,15 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
             }
         }
     }
-
-    @Override
-    public Set<Map<String, String>> getParameters(String layerName) {
+    
+    public Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName) {
         try {
-            return connectionManager.executeQuery(metadataFile, resultSet -> {
+            return (Map<String,Optional<Map<String, String>>>)connectionManager.executeQuery(metadataFile, resultSet -> {
                         try {
-                            Set<Map<String, String>> result = new HashSet<>();
+                            Map<String, Optional<Map<String, String>>> result = new HashMap<>();
                             while(resultSet.next()) {
-                                result.add(ParametersUtils.getMap(resultSet.getString(1)));
+                                Map<String, String> params = ParametersUtils.getMap(resultSet.getString(1));
+                                result.put(ParametersUtils.getId(params), Optional.of(params));
                             }
                             return result;
                         } catch (Exception exception) {
@@ -678,7 +680,7 @@ public final class MbtilesBlobStore extends SqliteBlobStore {
             if (LOGGER.isErrorEnabled()) {
                 LOGGER.error(String.format("Error getting metadata from file '%s'.", metadataFile), exception);
             }
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
     }
     

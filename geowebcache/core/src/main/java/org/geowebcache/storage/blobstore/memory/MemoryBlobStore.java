@@ -19,6 +19,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -787,6 +788,18 @@ public class MemoryBlobStore implements BlobStore, ApplicationContextAware {
                 LOG.debug("Getting parameters for Layer: " + layerName);
             }
             return store.getParameters(layerName);
+        } finally {
+            componentsStateLock.unlock();
+        }
+    }
+
+    public Map<String,Optional<Map<String, String>>> getParametersMapping(String layerName) {
+        componentsStateLock.lock();
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Getting parameters for Layer: " + layerName);
+            }
+            return store.getParametersMapping(layerName);
         } finally {
             componentsStateLock.unlock();
         }
