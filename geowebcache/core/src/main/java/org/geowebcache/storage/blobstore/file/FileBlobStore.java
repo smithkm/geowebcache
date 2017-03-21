@@ -841,12 +841,15 @@ public class FileBlobStore implements BlobStore {
                 }));
     }
     
+    static final int paramIdLength = ParametersUtils.getId(Collections.singletonMap("A", "B")).length();
+    
     @Override
     public Set<String> getParameterIds(String layerName) {
         try (Stream<Path> layerChildStream = layerChildStream(layerName, (p)-> Files.isDirectory(p))) {
             return layerChildStream
                 .map(p->p.getFileName().toString())
                 .map(s->s.substring(s.lastIndexOf('_')+1))
+                .filter(s->s.length()==paramIdLength) // Zoom level should never be the same length so this should be safe
                 .collect(Collectors.toSet());
         } catch (IOException e) {
             throw new UncheckedIOException(e);

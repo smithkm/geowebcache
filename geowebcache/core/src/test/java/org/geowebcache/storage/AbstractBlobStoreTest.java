@@ -1,10 +1,13 @@
 package org.geowebcache.storage;
 
+import static org.easymock.EasyMock.anyLong;
+import static org.easymock.EasyMock.isNull;
 import static org.easymock.classextension.EasyMock.capture;
 import static org.easymock.classextension.EasyMock.eq;
 import static org.easymock.classextension.EasyMock.geq;
 import static org.geowebcache.util.FileMatchers.resource;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.describedAs;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasProperty;
@@ -27,6 +30,8 @@ import org.geowebcache.layer.TileLayer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.hamcrest.Matchers;
 
 import org.easymock.Capture;
 import org.easymock.classextension.EasyMock;
@@ -595,5 +600,93 @@ public abstract class AbstractBlobStoreTest<TestClass extends BlobStore> {
         assertThat(store.get(fromCache1_2), is(false));
         assertThat(fromCache1_2, hasProperty("blobSize", is(0)));
 
+    }
+    
+    protected void cacheTile(String layerName, long x, long y, int z, String gridSetId, String format, 
+            Map<String, String> parameters, String content) throws StorageException{
+        TileObject to = TileObject.createCompleteTileObject(layerName, new long[]{x,y,z}, gridSetId, format, 
+                parameters, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
+        store.put(to);
+    }
+    
+    protected void assertTile(String layerName, long x, long y, int z, String gridSetId, String format, 
+            Map<String, String> parameters, String content) throws StorageException{
+        TileObject to = TileObject.createQueryTileObject(layerName, new long[]{x,y,z}, gridSetId, format, 
+                parameters);
+        assertThat(store.get(to), describedAs("get a tile", is(true)));
+        assertThat(to, hasProperty("blob",resource(new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)))));
+    }
+    
+    protected void assertNoTile(String layerName, long x, long y, int z, String gridSetId, String format, 
+            Map<String, String> parameters) throws StorageException{
+        TileObject to = TileObject.createQueryTileObject(layerName, new long[]{x,y,z}, gridSetId, format, 
+                parameters);
+        assertThat(store.get(to), describedAs("don't get a tile", is(false)));
+        assertThat(to, hasProperty("blob", nullValue()));
+        assertThat(to, hasProperty("blobSize", is(0)));
+    }
+    
+    @Test
+    public void testPurgeOrphansWithDefault() throws Exception {
+        TileLayer layer = EasyMock.createMock("layer", TileLayer.class);
+        final String layerName = "testLayer";
+        final String paramKey = "testKey";
+        
+        EasyMock.expect(layer.getName()).andStubReturn(layerName);
+        StringParameterFilter testFilter = new StringParameterFilter();
+        testFilter.setDefaultValue("DEFAULT");
+        testFilter.setKey(paramKey);
+        testFilter.setValues(Arrays.asList("keep1", "keep2", "keep3"));
+        EasyMock.expect(layer.getParameterFilters()).andStubReturn(Arrays.asList(testFilter));
+        EasyMock.replay(layer);
+        
+        Map<String, String> params1 = Collections.singletonMap(paramKey, "purge1");
+        String paramID1 = ParametersUtils.getId(params1);
+        Map<String, String> params2 = Collections.singletonMap(paramKey, "keep1");
+        String paramID2 = ParametersUtils.getId(params2);
+        final String gridset = "testGridSet";
+        final String format = "image/png";
+        TileObject toCache1 = TileObject.createCompleteTileObject(layerName,  new long[]{0L, 0L, 0L}, gridset, format, params1, new ByteArrayResource("1,2,4,5,6 test".getBytes(StandardCharsets.UTF_8)));
+        TileObject toCache2 = TileObject.createCompleteTileObject(layerName, new long[]{0L, 0L, 0L}, gridset, format, params2, new ByteArrayResource("7,8,9,10 test".getBytes(StandardCharsets.UTF_8)));
+        BlobStoreListener listener = EasyMock.createMock(BlobStoreListener.class);
+        store.addListener(listener);
+        
+        TileObject fromCache1_1 = TileObject.createQueryTileObject(layerName,  new long[]{0L, 0L, 0L}, gridset, format, params1);
+        TileObject fromCache2_1 = TileObject.createQueryTileObject(layerName, new long[]{0L, 0L, 0L}, gridset, format, params2);
+        TileObject fromCache1_2 = TileObject.createQueryTileObject(layerName,  new long[]{0L, 0L, 0L}, gridset, format, params1);
+        TileObject fromCache2_2 = TileObject.createQueryTileObject(layerName, new long[]{0L, 0L, 0L}, gridset, format, params2);
+        
+        if(events) {
+            listener.tileStored(eq(layerName), eq(gridset), eq(format), eq(paramID1), eq(0L), eq(0L), eq(0), 
+                anyLong()
+                );
+            listener.tileStored(eq(layerName), eq(gridset), eq(format), eq(paramID2), eq(0L), eq(0L), eq(0), 
+                anyLong()
+                );
+            listener.tileStored(eq(layerName), eq(gridset), eq(format), isNull(), eq(0L), eq(0L), eq(0), 
+                anyLong()
+                );
+        }
+        
+        EasyMock.replay(listener);
+        
+        cacheTile(layerName, 0,0,0, gridset, format, params1, "purge");
+        cacheTile(layerName, 0,0,0, gridset, format, params2, "keep param");
+        cacheTile(layerName, 0,0,0, gridset, format, null, "keep default");
+        EasyMock.verify(listener);
+        assertTile(layerName, 0,0,0, gridset, format, params1, "purge");
+        assertTile(layerName, 0,0,0, gridset, format, params2, "keep param");
+        assertTile(layerName, 0,0,0, gridset, format, null, "keep default");
+        EasyMock.reset(listener);
+        if(events) {
+            listener.parametersDeleted(eq(layerName), eq(paramID1));
+        }
+        EasyMock.replay(listener);
+        store.purgeOrphans(layer);
+        EasyMock.verify(listener);
+        assertNoTile(layerName, 0,0,0, gridset, format, params1);
+        assertTile(layerName, 0,0,0, gridset, format, params2, "keep param");
+        assertTile(layerName, 0,0,0, gridset, format, null, "keep default");
+        
     }
 }
