@@ -3,6 +3,8 @@ package org.geowebcache.storage;
 import java.util.Map;
 import java.util.Set;
 
+import org.geowebcache.layer.TileLayer;
+
 /**
  * Abstracts and manages the storing of cachable objects and their metadata.
  */
@@ -86,5 +88,15 @@ public interface StorageBroker {
     public abstract Set<String> getCachedParameterIds(String layerName) throws StorageException;
     
     public abstract Set<Map<String, String>> getCachedParameters(String layerName) throws StorageException;
+
+    /**
+     * Purge parameter caches from the layer if they are unreachable by its current parameter 
+     * filters.  The store may purge gridsets and formats as well.  These additional purges may be 
+     * guaranteed in future.
+     * @param layer
+     * @return
+     * @throws StorageException
+     */
+    public abstract boolean purgeOrphans(final TileLayer layer) throws StorageException;
 
 }

@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.geowebcache.io.Resource;
+import org.geowebcache.layer.TileLayer;
 
 /**
  * Handles cacheable objects (tiles, wfs responses) both in terms of data storage and metadata
@@ -69,6 +70,11 @@ public class DefaultStorageBroker implements StorageBroker {
     public boolean deleteByParametersId(final String layerName, String parametersId)
             throws StorageException {
         return blobStore.deleteByParametersId(layerName, parametersId);
+    }
+    @Override
+    public boolean purgeOrphans(final TileLayer layer)
+            throws StorageException {
+        return blobStore.purgeOrphans(layer);
     }
 
     public boolean rename(String oldLayerName, String newLayerName) throws StorageException {

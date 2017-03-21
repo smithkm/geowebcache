@@ -214,39 +214,44 @@ public interface BlobStore {
      * @param layer
      * @throws StorageException
      */
-    public default void purgeOrphans(TileLayer layer) throws StorageException {
+    public default boolean purgeOrphans(TileLayer layer) throws StorageException {
         // TODO maybe do purging based on gridset and format
         try{
-            getParametersMapping(layer.getName()).entrySet().stream()
-                .forEach(entry -> {
-                    boolean skookum = true;
-                    if(entry.getValue().isPresent()){
-                        final Map<String, String> params=entry.getValue().get();
-                        final List<ParameterFilter> parameterFilters = layer.getParameterFilters();
-                        skookum = skookum && params.size() == parameterFilters.size(); 
-                        skookum = skookum && params.entrySet().stream()
-                            .allMatch(e->parameterFilters.stream().anyMatch(filter->{
-                                try {
-                                    return filter.isFilteredValue(e.getValue());
-                                } catch (ParameterException ex) {
-                                    log.error("Could not check validity of parameter", ex);
-                                    return true;
-                                }
-                            }));
-                    } else {
-                        skookum = false;
+            final List<ParameterFilter> parameterFilters = layer.getParameterFilters();
+            
+            return getParametersMapping(layer.getName()).entrySet().stream()
+                .filter(parameterMapping -> {
+                    return parameterMapping.getValue()
+                        .map(parameters-> {
+                            // We know what the original parameters are
+                            return parameters.size() != parameterFilters.size() || // Should have the same number of parameters as the layer has filters
+                                parameterFilters.stream()
+                                    .allMatch(pfilter -> {
+                                        final String key = pfilter.getKey();
+                                        final String value = parameters.get(key);
+                                        if(Objects.isNull(value)) {
+                                            return true; // No parameter for this filter so purge
+                                        }
+                                        return !pfilter.isFilteredValue(value); // purge if it's not a filtered value
+                                    });
+                            })
+                        .orElse(true); // Don't have the original values so purge
+                    })
+                .map(Map.Entry::getKey)
+                .map(id->{
+                    try {
+                        return this.deleteByParametersId(layer.getName(), id);
+                    } catch (StorageException e) {
+                        throw new UncheckedIOException(e);
                     }
-                    if(!skookum) {
-                        try {
-                            this.deleteByParametersId(layer.getName(), entry.getKey());
-                        } catch (StorageException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    }
-                });
+                })
+                .reduce((x,y)->x||y) // OR results without short circuiting
+                .orElse(false);
         } catch (UncheckedIOException ex) {
             if(ex.getCause() instanceof StorageException) {
                 throw (StorageException) ex.getCause();
+            } else {
+                throw ex;
             }
         }
     }
