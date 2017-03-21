@@ -27,6 +27,7 @@ import org.geowebcache.io.GeoWebCacheXStream;
 import org.geowebcache.rest.RestletException;
 import org.geowebcache.seed.MassTruncateRequest;
 import org.geowebcache.seed.TruncateLayerRequest;
+import org.geowebcache.seed.TruncateOrphansRequest;
 import org.geowebcache.seed.TruncateParametersRequest;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.StorageException;
@@ -47,7 +48,8 @@ public class MassTruncateRestlet extends GWCSeedingRestlet {
     
     static final Class<?>[] DEFAULT_REQUEST_TYPES = {
             TruncateLayerRequest.class, 
-            TruncateParametersRequest.class
+            TruncateParametersRequest.class,
+            TruncateOrphansRequest.class
             };
 
     Class<?>[] requestTypes;
@@ -88,7 +90,7 @@ public class MassTruncateRestlet extends GWCSeedingRestlet {
     protected void handleRequest(Request req, Response resp, Object obj) {
         MassTruncateRequest mtr = (MassTruncateRequest) obj;
         try {
-            if(!mtr.doTruncate(broker, config)) {
+            if(!mtr.doTruncate(broker, getConfiguration())) {
                 throw new RestletException("Truncation failed", Status.SERVER_ERROR_INTERNAL);
             }
         } catch (IllegalArgumentException e) {

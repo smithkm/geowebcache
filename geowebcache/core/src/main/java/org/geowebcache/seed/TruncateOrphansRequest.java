@@ -15,9 +15,6 @@ import com.thoughtworks.xstream.converters.extended.NamedMapConverter;
 public class TruncateOrphansRequest implements MassTruncateRequest {
     String layerName;
     
-    @XStreamConverter(value = NamedMapConverter.class, strings = { "parameter", "key", "value" }, booleans = { false, false }, types = { String.class, String.class })
-    Map<String, String> parameters;
-    
     @Override
     public boolean doTruncate(StorageBroker sb, Configuration config) throws StorageException {
         final TileLayer layer = config.getTileLayer(layerName);
