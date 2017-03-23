@@ -14,7 +14,6 @@ import com.thoughtworks.xstream.converters.extended.NamedMapConverter;
 public class TruncateParametersRequest implements MassTruncateRequest {
     String layerName;
     
-    @XStreamConverter(value = NamedMapConverter.class, strings = { "parameter", "key", "value" }, booleans = { false, false }, types = { String.class, String.class })
     Map<String, String> parameters;
     
     @Override
