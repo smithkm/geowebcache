@@ -16,7 +16,7 @@ public class TruncateOrphansRequest implements MassTruncateRequest {
     String layerName;
     
     @Override
-    public boolean doTruncate(StorageBroker sb, Configuration config) throws StorageException {
+    public boolean doTruncate(StorageBroker sb, Configuration config, TileBreeder breeder) throws StorageException {
         final TileLayer layer = config.getTileLayer(layerName);
         return sb.purgeOrphans(layer);
     }
