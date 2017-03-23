@@ -115,7 +115,7 @@ public class MassTruncateRestlet extends GWCSeedingRestlet {
         this.config = config;
     }
     
-    public void setBreeder(TileBreeder breeder) {
+    public void setTileBreeder(TileBreeder breeder) {
         this.breeder = breeder;
     }
     

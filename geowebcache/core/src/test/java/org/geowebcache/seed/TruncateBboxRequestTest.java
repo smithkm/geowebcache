@@ -70,7 +70,6 @@ public class TruncateBboxRequestTest {
         final Set<Map<String, String>> allParams = new HashSet<>();
         allParams.add(Collections.singletonMap("STYLES", "style1"));
         allParams.add(Collections.singletonMap("STYLES", "style2"));
-        // TODO Remember to deal with default
         
         final long[][] coverages = new long[][]{{0,0,0,0,0},{0,0,1,1,1},{0,0,4,4,2}};
         final int[] metaFactors = new int[]{1,1};
@@ -88,6 +87,10 @@ public class TruncateBboxRequestTest {
             .andStubReturn(0);
         EasyMock.expect(subSet.getMaxCachedZoom())
             .andStubReturn(2);
+        EasyMock.expect(subSet.getZoomStart())
+            .andStubReturn(0);
+        EasyMock.expect(subSet.getZoomStop())
+            .andStubReturn(2);
         EasyMock.expect(subSet.getCoverageIntersections(bbox))
             .andStubReturn(coverages);
         EasyMock.expect(layer.getMetaTilingFactors())
@@ -97,15 +100,19 @@ public class TruncateBboxRequestTest {
         EasyMock.expect(layer.getName())
             .andStubReturn(layerName);
         
-        // Should issue seed requests for cartesian product of formats and parameters
+        // Should issue seed requests for Cartesian product of formats and parameters
         
         breeder.seed(eq(layerName), seedRequest(layerName, gridSetName, "image/png", 0, 2, bbox, Collections.singletonMap("STYLES", "style1")));
         EasyMock.expectLastCall().once();
         breeder.seed(eq(layerName), seedRequest(layerName, gridSetName, "image/png", 0, 2, bbox, Collections.singletonMap("STYLES", "style2")));
         EasyMock.expectLastCall().once();
+        breeder.seed(eq(layerName), seedRequest(layerName, gridSetName, "image/png", 0, 2, bbox, null)); // Default
+        EasyMock.expectLastCall().once();
         breeder.seed(eq(layerName), seedRequest(layerName, gridSetName, "image/jpeg", 0, 2, bbox, Collections.singletonMap("STYLES", "style1")));
         EasyMock.expectLastCall().once();
         breeder.seed(eq(layerName), seedRequest(layerName, gridSetName, "image/jpeg", 0, 2, bbox, Collections.singletonMap("STYLES", "style2")));
+        EasyMock.expectLastCall().once();
+        breeder.seed(eq(layerName), seedRequest(layerName, gridSetName, "image/jpeg", 0, 2, bbox, null)); // Default
         EasyMock.expectLastCall().once();
         
         EasyMock.replay(broker, config, breeder, layer, subSet);

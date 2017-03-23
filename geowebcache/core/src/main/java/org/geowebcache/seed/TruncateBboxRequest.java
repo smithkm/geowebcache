@@ -3,6 +3,7 @@ package org.geowebcache.seed;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.UncheckedGeoWebCacheException;
@@ -14,6 +15,8 @@ import org.geowebcache.mime.MimeType;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.storage.StorageException;
 
+import com.google.common.base.Optional;
+import com.sun.media.imageio.stream.StreamSegment;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 
 /**
@@ -42,10 +45,11 @@ public class TruncateBboxRequest implements MassTruncateRequest {
         final TileLayer tileLayer = config.getTileLayer(layerName);
         final Collection<MimeType> allFormats = tileLayer.getMimeTypes();
         final GridSubset subSet = tileLayer.getGridSubset(gridSetId);
-        final int minZ = subSet.getMinCachedZoom();
-        final int maxZ = subSet.getMaxCachedZoom();
+        final int minZ = Optional.fromNullable(subSet.getMinCachedZoom()).or(subSet.getZoomStart());
+        final int maxZ = Optional.fromNullable(subSet.getMaxCachedZoom()).or(subSet.getZoomStop());
         try {
-            int taskCount = allParams.stream()
+            int taskCount = Stream.concat(allParams.stream(), 
+                                Stream.of((Map<String,String>)null)) // Add null for the default parameters
                 .flatMap(params->allFormats.stream()
                     .map(format->
                             new SeedRequest(layerName, bounds, gridSetId, 1, minZ, maxZ, format.getMimeType(), GWCTask.TYPE.TRUNCATE, params)))
