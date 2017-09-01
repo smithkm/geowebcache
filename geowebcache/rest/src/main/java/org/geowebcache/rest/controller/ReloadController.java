@@ -34,8 +34,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
@@ -54,16 +52,8 @@ public class ReloadController {
 
     @RequestMapping(value = "/reload", method = RequestMethod.POST)
     public @ResponseBody
-    ResponseEntity<?> doPost(HttpServletRequest req, HttpServletResponse resp)
+    ResponseEntity<?> doReload()
             throws GeoWebCacheException, RestException, IOException {
-
-        if (req.getParameterMap() == null || req.getParameter("reload_configuration") == null) {
-            throw new RestException(
-                    "Unknown or malformed request. Please try again, somtimes the form "
-                            +"is not properly received. This frequently happens on the first POST "
-                            +"after a restart. The POST was to " + req.getRequestURI(),
-                    HttpStatus.BAD_REQUEST);
-        }
 
         StringBuilder doc = new StringBuilder();
 
