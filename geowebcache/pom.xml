@@ -10,7 +10,7 @@
   <url>http://geowebcache.org</url>
 
   <properties>
-    <gt.version>18-SNAPSHOT</gt.version>
+    <gt.version>19-SNAPSHOT</gt.version>
     <jts.version>1.14.0</jts.version>
     <jaiext.version>1.0.16</jaiext.version>
     <spring.version>4.2.5.RELEASE</spring.version>
@@ -611,5 +611,6 @@
 	<module>distributed</module>
     <module>s3storage</module>
     <module>sqlite</module>
+    <module>importexport</module>
   </modules>
 </project>
