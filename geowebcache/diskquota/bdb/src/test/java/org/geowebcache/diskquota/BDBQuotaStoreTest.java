@@ -29,6 +29,8 @@ import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.geowebcache.MockWepAppContextRule;
 import org.geowebcache.config.BaseConfiguration;
+import org.geowebcache.config.DefaultGridsets;
+import org.geowebcache.config.GridSetConfiguration;
 import org.geowebcache.config.MockConfigurationResourceProvider;
 import org.geowebcache.config.TileLayerConfiguration;
 import org.geowebcache.config.XMLConfiguration;
@@ -119,8 +121,9 @@ public class BDBQuotaStoreTest {
         context.addBean("xmlConfig", xmlConfig, XMLConfiguration.class.getInterfaces());
         LinkedList<TileLayerConfiguration> configList = new LinkedList<TileLayerConfiguration>();
         configList.add(xmlConfig);
-
-        GridSetBroker gridSetBroker = new GridSetBroker(true, true);
+        context.addBean("DefaultGridsets", new DefaultGridsets(true, true), DefaultGridsets.class, GridSetConfiguration.class, BaseConfiguration.class);
+        GridSetBroker gridSetBroker = new GridSetBroker();
+        gridSetBroker.setApplicationContext(context.getMockContext());
         layerDispatcher = new TileLayerDispatcher(gridSetBroker);
         layerDispatcher.setApplicationContext(context.getMockContext());
 
