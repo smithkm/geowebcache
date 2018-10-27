@@ -24,10 +24,6 @@
       <artifactId>javax.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-     <groupId>org.freemarker</groupId>
-     <artifactId>freemarker</artifactId>
-    </dependency>
 
     <!-- test dependencies  -->
     <dependency>
